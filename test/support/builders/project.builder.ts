@@ -1,10 +1,12 @@
 import { RecordStatus } from '@shared/domain/enums/record-status.enum';
+import { RoleEnum } from '@modules/authorization/domain/enums/role.enum';
 import type { ProjectHero } from '@modules/projects/domain/entities/project-hero';
 import {
   ProjectEntity,
   type ReconstituteProjectInput,
 } from '@modules/projects/domain/entities/project.entity';
 import { PROJECT_GOAL_TYPES } from '@modules/projects/domain/enums/project-goal-type.enum';
+import type { ProjectViewer } from '@modules/projects/domain/policies/project-visibility.policy';
 
 export function buildProjectHero(
   overrides: Partial<ProjectHero> = {},
@@ -41,4 +43,12 @@ export function buildProject(
     deletedBy: null,
     ...overrides,
   });
+}
+
+export function buildProjectAdmin(id = 1): ProjectViewer {
+  return { id, roles: [RoleEnum.ADMIN] };
+}
+
+export function buildProjectHeroViewer(id = 7): ProjectViewer {
+  return { id, roles: [RoleEnum.USER] };
 }

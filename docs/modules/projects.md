@@ -78,14 +78,19 @@ are never added or removed afterwards.
 | Route | Abilities |
 | --- | --- |
 | `GET /projects`, `GET /projects/:uuid`, `GET /projects/statistics` | `(READ, PROJECT)` |
-| `POST /projects` | `(CREATE, PROJECT)` |
-| `PATCH /projects/:uuid`, `PATCH /projects/:uuid/goals` | `(UPDATE, PROJECT)` + `(READ, PROJECT)` |
-| `DELETE /projects/:uuid` | `(DELETE, PROJECT)` + `(READ, PROJECT)` |
+| `POST /projects` | `(CREATE, PROJECT)` + the `ADMIN` role |
+| `PATCH /projects/:uuid`, `PATCH /projects/:uuid/goals` | `(UPDATE, PROJECT)` + `(READ, PROJECT)` + the `ADMIN` role |
+| `DELETE /projects/:uuid` | `(DELETE, PROJECT)` + `(READ, PROJECT)` + the `ADMIN` role |
 | `GET /projects/heroes` | `(READ, PROJECT)` + the `ADMIN` role |
 
 `ADMIN` holds every pair; `USER` holds only `(READ, PROJECT)`
-([seeds](authorization.md#seeds)), so only administrators create, edit, reassign, delete, or update
-goals, and only callers holding the `ADMIN` role list the assignable heroes.
+([seeds](authorization.md#seeds)). Grants are editable at runtime, so the abilities alone do not
+keep management with administrators: after the `AbilitiesGuard` checks the pairs, the create,
+update, goal update, and delete use-cases call `assertProjectAdministrator`, which rejects a caller
+without the `ADMIN` role with `ProjectManagementForbiddenError` (`403`) before the project is looked
+up. A `USER` granted `(CREATE, PROJECT)`, `(UPDATE, PROJECT)`, or `(DELETE, PROJECT)` therefore stays
+read-only, and only callers holding the `ADMIN` role create, edit, reassign, delete, or update goals,
+or list the assignable heroes.
 
 **Visibility.** A caller holding the `ADMIN` role sees every project. Anyone else is scoped to the
 projects they are responsible for (`projectScopeFor`): the listing and statistics only count them,

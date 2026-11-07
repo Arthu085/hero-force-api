@@ -10,6 +10,8 @@ import type {
 } from '../../domain/entities/project.entity';
 import { InactiveProjectError } from '../../domain/errors/inactive-project.error';
 import { ProjectNotFoundError } from '../../domain/errors/project-not-found.error';
+import { assertProjectAdministrator } from '../../domain/policies/project-management.policy';
+import type { ProjectViewer } from '../../domain/policies/project-visibility.policy';
 import {
   PROJECT_REPOSITORY,
   type ProjectRepository,
@@ -18,7 +20,7 @@ import {
 export interface UpdateProjectGoalsInput {
   uuid: string;
   goals: ProjectGoalChange[];
-  actorId: number | null;
+  viewer: ProjectViewer;
 }
 
 @Injectable()
@@ -30,8 +32,10 @@ export class UpdateProjectGoalsUseCase {
     private readonly transactionManager: TransactionManagerPort,
   ) {}
 
-  execute(input: UpdateProjectGoalsInput): Promise<ProjectEntity> {
-    return this.transactionManager.runInTransaction(async () => {
+  async execute(input: UpdateProjectGoalsInput): Promise<ProjectEntity> {
+    assertProjectAdministrator(input.viewer);
+
+    return await this.transactionManager.runInTransaction(async () => {
       const project = await this.projectRepository.findByUuidForUpdate(
         input.uuid,
       );
@@ -43,7 +47,7 @@ export class UpdateProjectGoalsUseCase {
       assertRecordActive(project, new InactiveProjectError());
 
       return this.projectRepository.update(
-        project.withGoalChanges(input.goals, input.actorId),
+        project.withGoalChanges(input.goals, input.viewer.id),
       );
     });
   }

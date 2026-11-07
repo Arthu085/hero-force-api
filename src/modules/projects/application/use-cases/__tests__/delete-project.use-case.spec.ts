@@ -1,4 +1,7 @@
-import { buildProject } from '@test/support/builders/project.builder';
+import {
+  buildProject,
+  buildProjectAdmin,
+} from '@test/support/builders/project.builder';
 import { mockOf } from '@test/support/mocks/mock-of';
 import type { TransactionManagerPort } from '@shared/application/ports';
 import type { ProjectEntity } from '../../../domain/entities/project.entity';
@@ -28,7 +31,10 @@ describe('DeleteProjectUseCase', () => {
   it('soft-deletes the project recording the actor', async () => {
     const { useCase, softDelete } = setup(buildProject());
 
-    await useCase.execute({ uuid: 'project-uuid', actorId: 4 });
+    await useCase.execute({
+      uuid: 'project-uuid',
+      viewer: buildProjectAdmin(4),
+    });
 
     const [deleted] = softDelete.mock.calls[0] as [ProjectEntity];
 
@@ -40,7 +46,7 @@ describe('DeleteProjectUseCase', () => {
     const { useCase, softDelete } = setup(null);
 
     await expect(
-      useCase.execute({ uuid: 'missing', actorId: 4 }),
+      useCase.execute({ uuid: 'missing', viewer: buildProjectAdmin(4) }),
     ).rejects.toBeInstanceOf(ProjectNotFoundError);
     expect(softDelete).not.toHaveBeenCalled();
   });

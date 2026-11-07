@@ -4,6 +4,8 @@ import {
   type TransactionManagerPort,
 } from '@shared/application/ports';
 import { ProjectNotFoundError } from '../../domain/errors/project-not-found.error';
+import { assertProjectAdministrator } from '../../domain/policies/project-management.policy';
+import type { ProjectViewer } from '../../domain/policies/project-visibility.policy';
 import {
   PROJECT_REPOSITORY,
   type ProjectRepository,
@@ -11,7 +13,7 @@ import {
 
 export interface DeleteProjectInput {
   uuid: string;
-  actorId: number | null;
+  viewer: ProjectViewer;
 }
 
 @Injectable()
@@ -24,6 +26,8 @@ export class DeleteProjectUseCase {
   ) {}
 
   async execute(input: DeleteProjectInput): Promise<void> {
+    assertProjectAdministrator(input.viewer);
+
     await this.transactionManager.runInTransaction(async () => {
       const project = await this.projectRepository.findByUuidForUpdate(
         input.uuid,
@@ -34,7 +38,7 @@ export class DeleteProjectUseCase {
       }
 
       await this.projectRepository.softDelete(
-        project.markDeleted(input.actorId),
+        project.markDeleted(input.viewer.id),
       );
     });
   }

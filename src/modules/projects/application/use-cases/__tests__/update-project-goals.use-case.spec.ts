@@ -1,4 +1,7 @@
-import { buildProject } from '@test/support/builders/project.builder';
+import {
+  buildProject,
+  buildProjectAdmin,
+} from '@test/support/builders/project.builder';
 import { mockOf } from '@test/support/mocks/mock-of';
 import type { TransactionManagerPort } from '@shared/application/ports';
 import { RecordStatus } from '@shared/domain/enums/record-status.enum';
@@ -37,7 +40,7 @@ describe('UpdateProjectGoalsUseCase', () => {
     const updated = await useCase.execute({
       uuid: 'project-uuid',
       goals: [{ goal: ProjectGoalType.EXCELLENCE, progress: 60 }],
-      actorId: 1,
+      viewer: buildProjectAdmin(1),
     });
 
     expect(update).toHaveBeenCalledTimes(1);
@@ -50,7 +53,11 @@ describe('UpdateProjectGoalsUseCase', () => {
     const { useCase, update } = setup(null);
 
     await expect(
-      useCase.execute({ uuid: 'missing', goals: [], actorId: 1 }),
+      useCase.execute({
+        uuid: 'missing',
+        goals: [],
+        viewer: buildProjectAdmin(1),
+      }),
     ).rejects.toBeInstanceOf(ProjectNotFoundError);
     expect(update).not.toHaveBeenCalled();
   });
@@ -59,7 +66,11 @@ describe('UpdateProjectGoalsUseCase', () => {
     const { useCase } = setup(buildProject({ status: RecordStatus.INACTIVE }));
 
     await expect(
-      useCase.execute({ uuid: 'project-uuid', goals: [], actorId: 1 }),
+      useCase.execute({
+        uuid: 'project-uuid',
+        goals: [],
+        viewer: buildProjectAdmin(1),
+      }),
     ).rejects.toBeInstanceOf(InactiveProjectError);
   });
 });

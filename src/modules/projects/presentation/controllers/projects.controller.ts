@@ -98,7 +98,7 @@ export class ProjectsController {
     .tags('projects')
     .summary('Create a project')
     .description(
-      'The project starts with the six fixed goals at 0%, so its status is PENDING.',
+      'Only callers holding the ADMIN role may create projects. The project starts with the six fixed goals at 0%, so its status is PENDING.',
     )
     .errorResponse(HttpStatus.NOT_FOUND, 'Responsible hero not found.')
     .errorResponse(
@@ -117,7 +117,7 @@ export class ProjectsController {
       name: dto.name,
       description: dto.description,
       responsibleUuid: dto.responsibleUuid,
-      actorId: actor.id,
+      viewer: actor,
     });
 
     return ProjectDetailResponseDto.fromDomain(project, translate);
@@ -132,7 +132,7 @@ export class ProjectsController {
     .tags('projects')
     .summary('Update a project')
     .description(
-      'Partial update of name, description, and responsible hero. Status and progress are derived from the goals and cannot be set.',
+      'Only callers holding the ADMIN role may update projects. Partial update of name, description, and responsible hero. Status and progress are derived from the goals and cannot be set.',
     )
     .errorResponse(
       HttpStatus.NOT_FOUND,
@@ -157,7 +157,7 @@ export class ProjectsController {
       name: dto.name,
       description: dto.description,
       responsibleUuid: dto.responsibleUuid,
-      actorId: actor.id,
+      viewer: actor,
     });
 
     return ProjectDetailResponseDto.fromDomain(project, translate);
@@ -172,7 +172,7 @@ export class ProjectsController {
     .tags('projects')
     .summary('Update project goals')
     .description(
-      'Changes the description and progress of the listed goals. Overall progress (the average rounded down) and status are recalculated.',
+      'Only callers holding the ADMIN role may update goals. Changes the description and progress of the listed goals. Overall progress (the average rounded down) and status are recalculated.',
     )
     .errorResponse(HttpStatus.NOT_FOUND, 'Project not found.')
     .errorResponse(HttpStatus.CONFLICT, 'Project is inactive.')
@@ -192,7 +192,7 @@ export class ProjectsController {
         description: goal.description,
         progress: goal.progress,
       })),
-      actorId: actor.id,
+      viewer: actor,
     });
 
     return ProjectDetailResponseDto.fromDomain(project, translate);
@@ -206,12 +206,13 @@ export class ProjectsController {
     .successMessage('success.deleted')
     .tags('projects')
     .summary('Soft-delete a project')
+    .description('Only callers holding the ADMIN role may delete projects.')
     .errorResponse(HttpStatus.NOT_FOUND, 'Project not found.')
     .build())
   async remove(
     @Param('uuid', ParseUuidParamPipe) uuid: string,
     @CurrentActor() actor: AuthenticatedUser,
   ): Promise<void> {
-    await this.deleteProject.execute({ uuid, actorId: actor.id });
+    await this.deleteProject.execute({ uuid, viewer: actor });
   }
 }

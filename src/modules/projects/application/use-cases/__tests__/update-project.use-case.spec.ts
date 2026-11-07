@@ -1,4 +1,7 @@
-import { buildProject } from '@test/support/builders/project.builder';
+import {
+  buildProject,
+  buildProjectAdmin,
+} from '@test/support/builders/project.builder';
 import { mockOf } from '@test/support/mocks/mock-of';
 import type { TransactionManagerPort } from '@shared/application/ports';
 import { RecordStatus } from '@shared/domain/enums/record-status.enum';
@@ -38,7 +41,7 @@ describe('UpdateProjectUseCase', () => {
     const updated = await useCase.execute({
       uuid: 'project-uuid',
       name: 'Renamed',
-      actorId: 2,
+      viewer: buildProjectAdmin(2),
     });
 
     expect(updated.name).toBe('Renamed');
@@ -54,7 +57,7 @@ describe('UpdateProjectUseCase', () => {
     await useCase.execute({
       uuid: 'project-uuid',
       responsibleUuid: 'hero-uuid',
-      actorId: 2,
+      viewer: buildProjectAdmin(2),
     });
 
     expect(findCandidateByUuid).not.toHaveBeenCalled();
@@ -75,7 +78,7 @@ describe('UpdateProjectUseCase', () => {
     const updated = await useCase.execute({
       uuid: 'project-uuid',
       responsibleUuid: 'new-hero',
-      actorId: 2,
+      viewer: buildProjectAdmin(2),
     });
 
     expect(updated.responsible).toEqual({
@@ -102,7 +105,7 @@ describe('UpdateProjectUseCase', () => {
       useCase.execute({
         uuid: 'project-uuid',
         responsibleUuid: 'new-hero',
-        actorId: 2,
+        viewer: buildProjectAdmin(2),
       }),
     ).rejects.toBeInstanceOf(IneligibleResponsibleHeroError);
     expect(update).not.toHaveBeenCalled();
@@ -112,7 +115,7 @@ describe('UpdateProjectUseCase', () => {
     const { useCase } = setup(null);
 
     await expect(
-      useCase.execute({ uuid: 'missing', actorId: 2 }),
+      useCase.execute({ uuid: 'missing', viewer: buildProjectAdmin(2) }),
     ).rejects.toBeInstanceOf(ProjectNotFoundError);
   });
 
@@ -120,7 +123,7 @@ describe('UpdateProjectUseCase', () => {
     const { useCase } = setup(buildProject({ status: RecordStatus.INACTIVE }));
 
     await expect(
-      useCase.execute({ uuid: 'project-uuid', actorId: 2 }),
+      useCase.execute({ uuid: 'project-uuid', viewer: buildProjectAdmin(2) }),
     ).rejects.toBeInstanceOf(InactiveProjectError);
   });
 });

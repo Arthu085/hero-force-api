@@ -5,6 +5,8 @@ import {
   type TransactionManagerPort,
 } from '@shared/application/ports';
 import { ProjectEntity } from '../../domain/entities/project.entity';
+import { assertProjectAdministrator } from '../../domain/policies/project-management.policy';
+import type { ProjectViewer } from '../../domain/policies/project-visibility.policy';
 import { assertEligibleResponsibleHero } from '../../domain/policies/responsible-hero.policy';
 import {
   PROJECT_HERO_REPOSITORY,
@@ -19,7 +21,7 @@ export interface CreateProjectInput {
   name: string;
   description: string;
   responsibleUuid: string;
-  actorId: number | null;
+  viewer: ProjectViewer;
 }
 
 @Injectable()
@@ -33,8 +35,10 @@ export class CreateProjectUseCase {
     private readonly transactionManager: TransactionManagerPort,
   ) {}
 
-  execute(input: CreateProjectInput): Promise<ProjectEntity> {
-    return this.transactionManager.runInTransaction(async () => {
+  async execute(input: CreateProjectInput): Promise<ProjectEntity> {
+    assertProjectAdministrator(input.viewer);
+
+    return await this.transactionManager.runInTransaction(async () => {
       const responsible = assertEligibleResponsibleHero(
         await this.heroRepository.findCandidateByUuid(input.responsibleUuid),
       );
@@ -45,7 +49,7 @@ export class CreateProjectUseCase {
           name: input.name,
           description: input.description,
           responsible,
-          createdBy: input.actorId,
+          createdBy: input.viewer.id,
         }),
       );
     });
