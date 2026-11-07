@@ -90,7 +90,9 @@ goals, and only callers holding the `ADMIN` role list the assignable heroes.
 **Visibility.** A caller holding the `ADMIN` role sees every project. Anyone else is scoped to the
 projects they are responsible for (`projectScopeFor`): the listing and statistics only count them,
 and `GET /projects/:uuid` on another hero's project is `ProjectNotFoundError` (`404`), so a project's
-existence does not leak. The `responsible` filter is accepted from everyone but can only narrow a
+existence does not leak. Update, goal update, and delete lock the project within the same scope, so
+a non-administrator role granted `(UPDATE, PROJECT)` or `(DELETE, PROJECT)` can only change the
+projects its holder is responsible for; any other project is `404`. The `responsible` filter is accepted from everyone but can only narrow a
 regular user's own scope.
 
 ## Listing and statistics

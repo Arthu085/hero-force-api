@@ -14,21 +14,24 @@ const transactionManager = mockOf<TransactionManagerPort>({
   runInTransaction: (work) => work(),
 });
 
+const admin = (id: number) => ({ id, roles: ['ADMIN'] });
+
+const hero = { id: 7, roles: ['USER'] };
+
 describe('UpdateProjectGoalsUseCase', () => {
   function setup(project: ProjectEntity | null = buildProject()) {
     const update = jest.fn((updated: ProjectEntity) =>
       Promise.resolve(updated),
     );
 
+    const findByUuidForUpdate = jest.fn().mockResolvedValue(project);
+
     const useCase = new UpdateProjectGoalsUseCase(
-      mockOf<ProjectRepository>({
-        update,
-        findByUuidForUpdate: jest.fn().mockResolvedValue(project),
-      }),
+      mockOf<ProjectRepository>({ update, findByUuidForUpdate }),
       transactionManager,
     );
 
-    return { useCase, update };
+    return { useCase, update, findByUuidForUpdate };
   }
 
   it('persists the changed goals with recalculated progress', async () => {
@@ -37,7 +40,7 @@ describe('UpdateProjectGoalsUseCase', () => {
     const updated = await useCase.execute({
       uuid: 'project-uuid',
       goals: [{ goal: ProjectGoalType.EXCELLENCE, progress: 60 }],
-      actorId: 1,
+      viewer: admin(1),
     });
 
     expect(update).toHaveBeenCalledTimes(1);
@@ -50,7 +53,7 @@ describe('UpdateProjectGoalsUseCase', () => {
     const { useCase, update } = setup(null);
 
     await expect(
-      useCase.execute({ uuid: 'missing', goals: [], actorId: 1 }),
+      useCase.execute({ uuid: 'missing', goals: [], viewer: admin(1) }),
     ).rejects.toBeInstanceOf(ProjectNotFoundError);
     expect(update).not.toHaveBeenCalled();
   });
@@ -59,7 +62,18 @@ describe('UpdateProjectGoalsUseCase', () => {
     const { useCase } = setup(buildProject({ status: RecordStatus.INACTIVE }));
 
     await expect(
-      useCase.execute({ uuid: 'project-uuid', goals: [], actorId: 1 }),
+      useCase.execute({ uuid: 'project-uuid', goals: [], viewer: admin(1) }),
     ).rejects.toBeInstanceOf(InactiveProjectError);
+  });
+
+  it('looks the project up within the viewer scope', async () => {
+    const { useCase, findByUuidForUpdate } = setup(null);
+
+    await expect(
+      useCase.execute({ uuid: 'project-uuid', goals: [], viewer: hero }),
+    ).rejects.toBeInstanceOf(ProjectNotFoundError);
+    expect(findByUuidForUpdate).toHaveBeenCalledWith('project-uuid', {
+      responsibleId: 7,
+    });
   });
 });

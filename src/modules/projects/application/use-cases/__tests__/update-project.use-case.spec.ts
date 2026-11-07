@@ -14,6 +14,10 @@ const transactionManager = mockOf<TransactionManagerPort>({
   runInTransaction: (work) => work(),
 });
 
+const admin = (id: number) => ({ id, roles: ['ADMIN'] });
+
+const hero = { id: 7, roles: ['USER'] };
+
 describe('UpdateProjectUseCase', () => {
   function setup(project: ProjectEntity | null = buildProject()) {
     const update = jest.fn((updated: ProjectEntity) =>
@@ -29,7 +33,7 @@ describe('UpdateProjectUseCase', () => {
       transactionManager,
     );
 
-    return { useCase, update, findCandidateByUuid };
+    return { useCase, update, findCandidateByUuid, findByUuidForUpdate };
   }
 
   it('keeps omitted fields and the current hero', async () => {
@@ -38,7 +42,7 @@ describe('UpdateProjectUseCase', () => {
     const updated = await useCase.execute({
       uuid: 'project-uuid',
       name: 'Renamed',
-      actorId: 2,
+      viewer: admin(2),
     });
 
     expect(updated.name).toBe('Renamed');
@@ -54,7 +58,7 @@ describe('UpdateProjectUseCase', () => {
     await useCase.execute({
       uuid: 'project-uuid',
       responsibleUuid: 'hero-uuid',
-      actorId: 2,
+      viewer: admin(2),
     });
 
     expect(findCandidateByUuid).not.toHaveBeenCalled();
@@ -75,7 +79,7 @@ describe('UpdateProjectUseCase', () => {
     const updated = await useCase.execute({
       uuid: 'project-uuid',
       responsibleUuid: 'new-hero',
-      actorId: 2,
+      viewer: admin(2),
     });
 
     expect(updated.responsible).toEqual({
@@ -102,7 +106,7 @@ describe('UpdateProjectUseCase', () => {
       useCase.execute({
         uuid: 'project-uuid',
         responsibleUuid: 'new-hero',
-        actorId: 2,
+        viewer: admin(2),
       }),
     ).rejects.toBeInstanceOf(IneligibleResponsibleHeroError);
     expect(update).not.toHaveBeenCalled();
@@ -112,7 +116,7 @@ describe('UpdateProjectUseCase', () => {
     const { useCase } = setup(null);
 
     await expect(
-      useCase.execute({ uuid: 'missing', actorId: 2 }),
+      useCase.execute({ uuid: 'missing', viewer: admin(2) }),
     ).rejects.toBeInstanceOf(ProjectNotFoundError);
   });
 
@@ -120,7 +124,27 @@ describe('UpdateProjectUseCase', () => {
     const { useCase } = setup(buildProject({ status: RecordStatus.INACTIVE }));
 
     await expect(
-      useCase.execute({ uuid: 'project-uuid', actorId: 2 }),
+      useCase.execute({ uuid: 'project-uuid', viewer: admin(2) }),
     ).rejects.toBeInstanceOf(InactiveProjectError);
+  });
+
+  it('looks the project up within the viewer scope', async () => {
+    const { useCase, update, findByUuidForUpdate } = setup(null);
+
+    await expect(
+      useCase.execute({ uuid: 'project-uuid', name: 'Taken', viewer: hero }),
+    ).rejects.toBeInstanceOf(ProjectNotFoundError);
+    expect(findByUuidForUpdate).toHaveBeenCalledWith('project-uuid', {
+      responsibleId: 7,
+    });
+    expect(update).not.toHaveBeenCalled();
+  });
+
+  it('gives an administrator every project', async () => {
+    const { useCase, findByUuidForUpdate } = setup();
+
+    await useCase.execute({ uuid: 'project-uuid', viewer: admin(2) });
+
+    expect(findByUuidForUpdate).toHaveBeenCalledWith('project-uuid', {});
   });
 });

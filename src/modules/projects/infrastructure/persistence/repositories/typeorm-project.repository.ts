@@ -95,15 +95,20 @@ export class TypeOrmProjectRepository
     return project ? ProjectMapper.toDomain(project) : null;
   }
 
-  async findByUuidForUpdate(uuid: string): Promise<ProjectEntity | null> {
-    await this.repository
+  async findByUuidForUpdate(
+    uuid: string,
+    scope: ProjectScope = {},
+  ): Promise<ProjectEntity | null> {
+    const lock = this.repository
       .createQueryBuilder('project')
       .select('project.id')
       .where('project.uuid = :uuid', { uuid })
-      .setLock('for_no_key_update')
-      .getOne();
+      .setLock('for_no_key_update');
 
-    return this.findByUuid(uuid);
+    this.applyScope(lock, scope);
+    await lock.getOne();
+
+    return this.findByUuid(uuid, scope);
   }
 
   async getStatistics(scope: ProjectScope): Promise<ProjectStatistics> {

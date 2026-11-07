@@ -157,7 +157,7 @@ export class ProjectsController {
       name: dto.name,
       description: dto.description,
       responsibleUuid: dto.responsibleUuid,
-      actorId: actor.id,
+      viewer: actor,
     });
 
     return ProjectDetailResponseDto.fromDomain(project, translate);
@@ -192,7 +192,7 @@ export class ProjectsController {
         description: goal.description,
         progress: goal.progress,
       })),
-      actorId: actor.id,
+      viewer: actor,
     });
 
     return ProjectDetailResponseDto.fromDomain(project, translate);
@@ -212,6 +212,6 @@ export class ProjectsController {
     @Param('uuid', ParseUuidParamPipe) uuid: string,
     @CurrentActor() actor: AuthenticatedUser,
   ): Promise<void> {
-    await this.deleteProject.execute({ uuid, actorId: actor.id });
+    await this.deleteProject.execute({ uuid, viewer: actor });
   }
 }

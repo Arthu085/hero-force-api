@@ -11,6 +11,10 @@ import type {
 import { InactiveProjectError } from '../../domain/errors/inactive-project.error';
 import { ProjectNotFoundError } from '../../domain/errors/project-not-found.error';
 import {
+  projectScopeFor,
+  type ProjectViewer,
+} from '../../domain/policies/project-visibility.policy';
+import {
   PROJECT_REPOSITORY,
   type ProjectRepository,
 } from '../../domain/repositories/project.repository';
@@ -18,7 +22,7 @@ import {
 export interface UpdateProjectGoalsInput {
   uuid: string;
   goals: ProjectGoalChange[];
-  actorId: number | null;
+  viewer: ProjectViewer;
 }
 
 @Injectable()
@@ -34,6 +38,7 @@ export class UpdateProjectGoalsUseCase {
     return this.transactionManager.runInTransaction(async () => {
       const project = await this.projectRepository.findByUuidForUpdate(
         input.uuid,
+        projectScopeFor(input.viewer),
       );
 
       if (!project) {
@@ -43,7 +48,7 @@ export class UpdateProjectGoalsUseCase {
       assertRecordActive(project, new InactiveProjectError());
 
       return this.projectRepository.update(
-        project.withGoalChanges(input.goals, input.actorId),
+        project.withGoalChanges(input.goals, input.viewer.id),
       );
     });
   }

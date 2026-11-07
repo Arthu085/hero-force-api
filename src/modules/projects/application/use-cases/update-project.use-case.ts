@@ -8,6 +8,10 @@ import type { ProjectEntity } from '../../domain/entities/project.entity';
 import type { ProjectHero } from '../../domain/entities/project-hero';
 import { InactiveProjectError } from '../../domain/errors/inactive-project.error';
 import { ProjectNotFoundError } from '../../domain/errors/project-not-found.error';
+import {
+  projectScopeFor,
+  type ProjectViewer,
+} from '../../domain/policies/project-visibility.policy';
 import { assertEligibleResponsibleHero } from '../../domain/policies/responsible-hero.policy';
 import {
   PROJECT_HERO_REPOSITORY,
@@ -23,7 +27,7 @@ export interface UpdateProjectInput {
   name?: string;
   description?: string;
   responsibleUuid?: string;
-  actorId: number | null;
+  viewer: ProjectViewer;
 }
 
 @Injectable()
@@ -41,6 +45,7 @@ export class UpdateProjectUseCase {
     return this.transactionManager.runInTransaction(async () => {
       const project = await this.projectRepository.findByUuidForUpdate(
         input.uuid,
+        projectScopeFor(input.viewer),
       );
 
       if (!project) {
@@ -57,7 +62,7 @@ export class UpdateProjectUseCase {
             project.responsible,
             input.responsibleUuid,
           ),
-          actorId: input.actorId,
+          actorId: input.viewer.id,
         }),
       );
     });

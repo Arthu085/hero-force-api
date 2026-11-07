@@ -10,25 +10,27 @@ const transactionManager = mockOf<TransactionManagerPort>({
   runInTransaction: (work) => work(),
 });
 
+const admin = (id: number) => ({ id, roles: ['ADMIN'] });
+
+const hero = { id: 7, roles: ['USER'] };
+
 describe('DeleteProjectUseCase', () => {
   function setup(project: ProjectEntity | null) {
     const softDelete = jest.fn().mockResolvedValue(undefined);
+    const findByUuidForUpdate = jest.fn().mockResolvedValue(project);
 
     const useCase = new DeleteProjectUseCase(
-      mockOf<ProjectRepository>({
-        softDelete,
-        findByUuidForUpdate: jest.fn().mockResolvedValue(project),
-      }),
+      mockOf<ProjectRepository>({ softDelete, findByUuidForUpdate }),
       transactionManager,
     );
 
-    return { useCase, softDelete };
+    return { useCase, softDelete, findByUuidForUpdate };
   }
 
   it('soft-deletes the project recording the actor', async () => {
     const { useCase, softDelete } = setup(buildProject());
 
-    await useCase.execute({ uuid: 'project-uuid', actorId: 4 });
+    await useCase.execute({ uuid: 'project-uuid', viewer: admin(4) });
 
     const [deleted] = softDelete.mock.calls[0] as [ProjectEntity];
 
@@ -40,8 +42,18 @@ describe('DeleteProjectUseCase', () => {
     const { useCase, softDelete } = setup(null);
 
     await expect(
-      useCase.execute({ uuid: 'missing', actorId: 4 }),
+      useCase.execute({ uuid: 'missing', viewer: admin(4) }),
     ).rejects.toBeInstanceOf(ProjectNotFoundError);
     expect(softDelete).not.toHaveBeenCalled();
+  });
+
+  it('locks the project within the viewer scope', async () => {
+    const { useCase, findByUuidForUpdate } = setup(buildProject());
+
+    await useCase.execute({ uuid: 'project-uuid', viewer: hero });
+
+    expect(findByUuidForUpdate).toHaveBeenCalledWith('project-uuid', {
+      responsibleId: 7,
+    });
   });
 });

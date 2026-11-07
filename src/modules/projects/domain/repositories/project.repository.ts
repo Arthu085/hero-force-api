@@ -35,7 +35,10 @@ export interface ProjectRepository {
     sort?: ProjectListSort,
   ): Promise<PaginatedProjects>;
   findByUuid(uuid: string, scope?: ProjectScope): Promise<ProjectEntity | null>;
-  findByUuidForUpdate(uuid: string): Promise<ProjectEntity | null>;
+  findByUuidForUpdate(
+    uuid: string,
+    scope?: ProjectScope,
+  ): Promise<ProjectEntity | null>;
   getStatistics(scope: ProjectScope): Promise<ProjectStatistics>;
   create(project: ProjectEntity): Promise<ProjectEntity>;
   update(project: ProjectEntity): Promise<ProjectEntity>;
