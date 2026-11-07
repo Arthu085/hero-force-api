@@ -445,7 +445,7 @@ jobs:
 - **Production image smoke test** builds the `prod` target with Buildx (cached, nothing pushed) and
   runs `scripts/smoke-test-prod-image.sh`.
 - **Frontend API integration tests** checks out the frontend repository and runs its
-  [API integration suite](https://github.com/Arthu085/frontend-template#api-integration-tests) against
+  [API integration suite](https://github.com/Arthu085/hero-force-client#api-integration-tests) against
   this code through `test/frontend/server.ts`, so a change that breaks the frontend's contract fails
   here. It uses the frontend branch with the same name when one exists, and `main` otherwise, so a
   coordinated contract change uses one branch name in both repositories. The frontend's CI runs the
@@ -460,8 +460,8 @@ The integration job reads the other repository with these settings:
   branch lookup and the checkout receive it, and the checkout does not persist it. A public repository
   needs no secret, because the job falls back to `github.token`.
 - **`FRONTEND_REPOSITORY` (Actions variable, optional):** the `<owner>/<name>` to test against. It
-  defaults to `frontend-template` under this repository's owner; a project created from this template
-  sets it to its own frontend.
+  defaults to `hero-force-client` under this repository's owner; set it to test against another
+  frontend repository, such as a fork.
 
 Missing or insufficient credentials fail the job with an explicit error instead of skipping it, so a
 contract break cannot pass silently. A project with no frontend repository removes the job.

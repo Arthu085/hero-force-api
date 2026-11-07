@@ -1,7 +1,7 @@
 {
-  "name": "api",
+  "name": "hero-force-api",
   "version": "0.0.1",
-  "description": "REST API built on NestJS 11 with a DDD-modular architecture.",
+  "description": "Hero Force REST API built on NestJS 11 with a DDD-modular architecture.",
   "author": "",
   "private": true,
   "license": "UNLICENSED",
