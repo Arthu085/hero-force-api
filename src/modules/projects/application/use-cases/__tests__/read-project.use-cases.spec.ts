@@ -6,6 +6,7 @@ import { mockOf } from '@test/support/mocks/mock-of';
 import { RecordStatus } from '@shared/domain/enums/record-status.enum';
 import { ProjectStatus } from '../../../domain/enums/project-status.enum';
 import { InactiveProjectError } from '../../../domain/errors/inactive-project.error';
+import { ProjectHeroesForbiddenError } from '../../../domain/errors/project-heroes-forbidden.error';
 import { ProjectNotFoundError } from '../../../domain/errors/project-not-found.error';
 import type { ProjectHeroRepository } from '../../../domain/repositories/project-hero.repository';
 import type { ProjectRepository } from '../../../domain/repositories/project.repository';
@@ -154,9 +155,27 @@ describe('ListProjectHeroesUseCase', () => {
       mockOf<ProjectHeroRepository>({ findEligiblePaginated }),
     );
 
-    const result = await useCase.execute({ page: 3, limit: 10, name: ' pe ' });
+    const result = await useCase.execute({
+      page: 3,
+      limit: 10,
+      name: ' pe ',
+      viewer: admin,
+    });
 
     expect(findEligiblePaginated).toHaveBeenCalledWith(20, 10, 'pe');
     expect(result.items).toBe(heroes);
+  });
+
+  it('rejects a caller without the ADMIN role before querying', async () => {
+    const findEligiblePaginated = jest.fn();
+
+    const useCase = new ListProjectHeroesUseCase(
+      mockOf<ProjectHeroRepository>({ findEligiblePaginated }),
+    );
+
+    await expect(
+      useCase.execute({ page: 1, limit: 10, viewer: hero }),
+    ).rejects.toBeInstanceOf(ProjectHeroesForbiddenError);
+    expect(findEligiblePaginated).not.toHaveBeenCalled();
   });
 });

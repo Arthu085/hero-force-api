@@ -6,8 +6,12 @@ export interface ProjectViewer {
   roles: readonly string[];
 }
 
+export function isProjectAdministrator(viewer: ProjectViewer): boolean {
+  return viewer.roles.includes(RoleEnum.ADMIN);
+}
+
 export function projectScopeFor(viewer: ProjectViewer): ProjectScope {
-  if (viewer.roles.includes(RoleEnum.ADMIN)) {
+  if (isProjectAdministrator(viewer)) {
     return {};
   }
 

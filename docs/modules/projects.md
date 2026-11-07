@@ -45,9 +45,12 @@ Every project has exactly one responsible hero (`projects.responsible_id`, an `i
   and audit fields are never exposed.
 - **Picking a hero does not open the user directory.** `GET /projects/heroes` lists the eligible
   heroes (active users with an active `USER` role, by name, with an optional `name` filter) in the
-  same public shape. It needs `(UPDATE, PROJECT)` and `(READ, PROJECT)`, so regular users, who hold
-  only `(READ, PROJECT)`, cannot call it, and administrators need no `(READ, USER)` for it. An
-  administrator who also holds `USER` is eligible.
+  same public shape. Like every `GET`, it needs `(READ, PROJECT)`; on top of that,
+  `ListProjectHeroesUseCase` lets only callers holding the `ADMIN` role list heroes
+  (`ProjectHeroesForbiddenError`, `403`), so regular users never see the full list of heroes,
+  whatever grants their role has. It needs no `(UPDATE, PROJECT)`, so creating a project needs
+  only `(CREATE, PROJECT)` and `(READ, PROJECT)`, and no `(READ, USER)`. An administrator who also
+  holds `USER` is eligible.
 
 ## Goals, progress, and status
 
@@ -78,11 +81,11 @@ are never added or removed afterwards.
 | `POST /projects` | `(CREATE, PROJECT)` |
 | `PATCH /projects/:uuid`, `PATCH /projects/:uuid/goals` | `(UPDATE, PROJECT)` + `(READ, PROJECT)` |
 | `DELETE /projects/:uuid` | `(DELETE, PROJECT)` + `(READ, PROJECT)` |
-| `GET /projects/heroes` | `(UPDATE, PROJECT)` + `(READ, PROJECT)` |
+| `GET /projects/heroes` | `(READ, PROJECT)` + the `ADMIN` role |
 
 `ADMIN` holds every pair; `USER` holds only `(READ, PROJECT)`
 ([seeds](authorization.md#seeds)), so only administrators create, edit, reassign, delete, or update
-goals.
+goals, and only callers holding the `ADMIN` role list the assignable heroes.
 
 **Visibility.** A caller holding the `ADMIN` role sees every project. Anyone else is scoped to the
 projects they are responsible for (`projectScopeFor`): the listing and statistics only count them,

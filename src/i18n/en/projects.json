@@ -3,6 +3,7 @@
     "not_found": "Project not found",
     "inactive": "Project is inactive",
     "responsible_not_found": "Responsible hero not found",
-    "responsible_ineligible": "The responsible hero must be an active user with the User role"
+    "responsible_ineligible": "The responsible hero must be an active user with the User role",
+    "heroes_forbidden": "Only administrators can list the heroes available for projects"
   }
 }

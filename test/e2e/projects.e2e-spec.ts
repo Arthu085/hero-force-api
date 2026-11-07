@@ -243,7 +243,15 @@ describe('Projects (e2e)', () => {
       .send({ goals: [{ goal: 'AGILITY', progress: 100 }] })
       .expect(403);
     await hero.delete(`/api/projects/${project.uuid}`).expect(403);
-    await hero.get('/api/projects/heroes').expect(403);
+
+    const heroesResponse = await hero
+      .get('/api/projects/heroes')
+      .set('Accept-Language', 'en')
+      .expect(403);
+
+    expect((heroesResponse.body as { message: string }).message).toBe(
+      'Only administrators can list the heroes available for projects',
+    );
     await hero.get('/api/users').expect(403);
   });
 
