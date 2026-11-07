@@ -1,0 +1,102 @@
+# Manual database maintenance for the Neon-hosted Hero Force demo.
+# Configure the "production-database" GitHub Environment with NEON_DB_* secrets
+# and restrict it to main (preferably require reviewer approval).
+name: Neon database maintenance
+
+on:
+  workflow_dispatch:
+    inputs:
+      operation:
+        description: 'Database operation'
+        required: true
+        type: choice
+        options:
+          - migrate-and-seed
+          - bootstrap-admin
+      confirmation:
+        description: 'Type hero-force-production to confirm the target database'
+        required: true
+        type: string
+
+permissions:
+  contents: read
+
+concurrency:
+  group: hero-force-neon-production-database
+  cancel-in-progress: false
+
+jobs:
+  database:
+    if: github.ref == 'refs/heads/main'
+    runs-on: ubuntu-latest
+    environment: production-database
+
+    steps:
+      - name: Confirm production operation
+        env:
+          CONFIRMATION: ${{ inputs.confirmation }}
+        run: |
+          if [ "$CONFIRMATION" != "hero-force-production" ]; then
+            echo "::error::Incorrect production confirmation value."
+            exit 1
+          fi
+
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version-file: .nvmrc
+          cache: npm
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Compile production scripts
+        run: npm run build
+
+      - name: Apply migrations and required structural seeds
+        if: inputs.operation == 'migrate-and-seed'
+        env:
+          NODE_ENV: production
+          DB_HOST: ${{ secrets.NEON_DB_HOST }}
+          DB_PORT: '5432'
+          DB_USER: ${{ secrets.NEON_DB_USER }}
+          DB_PASSWORD: ${{ secrets.NEON_DB_PASSWORD }}
+          DB_NAME: ${{ secrets.NEON_DB_NAME }}
+          DB_SSL: 'true'
+          DB_POOL_MAX: '5'
+          DB_STATEMENT_TIMEOUT_MS: '30000'
+          SEED_ADMIN_ENABLED: 'false'
+        run: |
+          for key in DB_HOST DB_USER DB_PASSWORD DB_NAME; do
+            if [ -z "${!key}" ]; then
+              echo "::error::Missing database configuration: $key"
+              exit 1
+            fi
+          done
+          npm run migration:run:prod
+          npm run seed:prod
+
+      - name: Create initial administrator (manual one-time action)
+        if: inputs.operation == 'bootstrap-admin'
+        env:
+          NODE_ENV: production
+          DB_HOST: ${{ secrets.NEON_DB_HOST }}
+          DB_PORT: '5432'
+          DB_USER: ${{ secrets.NEON_DB_USER }}
+          DB_PASSWORD: ${{ secrets.NEON_DB_PASSWORD }}
+          DB_NAME: ${{ secrets.NEON_DB_NAME }}
+          DB_SSL: 'true'
+          DB_POOL_MAX: '5'
+          DB_STATEMENT_TIMEOUT_MS: '30000'
+          SEED_ADMIN_ENABLED: 'true'
+          SEED_ADMIN_EMAIL: ${{ secrets.PRODUCTION_ADMIN_EMAIL }}
+          SEED_ADMIN_PASSWORD: ${{ secrets.PRODUCTION_ADMIN_PASSWORD }}
+        run: |
+          for key in DB_HOST DB_USER DB_PASSWORD DB_NAME SEED_ADMIN_EMAIL SEED_ADMIN_PASSWORD; do
+            if [ -z "${!key}" ]; then
+              echo "::error::Missing database or administrator configuration: $key"
+              exit 1
+            fi
+          done
+          npm run seed:prod
