@@ -298,26 +298,6 @@ describe('Project repositories (integration)', () => {
       ).toBe(project.uuid);
     });
 
-    it('locks a project for update only within the given scope', async () => {
-      const userRole = await insertRole(RoleEnum.USER);
-      const peter = await insertUser('Peter Parker', [userRole]);
-      const diana = await insertUser('Diana Prince', [userRole]);
-      const project = await createProject('Skyfall', peter);
-
-      const [outsideScope, withinScope] =
-        await transactionManager.runInTransaction(async () => [
-          await projects.findByUuidForUpdate(project.uuid, {
-            responsibleId: diana.id,
-          }),
-          await projects.findByUuidForUpdate(project.uuid, {
-            responsibleId: peter.id,
-          }),
-        ]);
-
-      expect(outsideScope).toBeNull();
-      expect(withinScope?.uuid).toBe(project.uuid);
-    });
-
     it('computes statistics within a scope', async () => {
       expect(await projects.getStatistics({})).toEqual({
         total: 0,

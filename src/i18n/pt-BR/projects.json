@@ -4,6 +4,7 @@
     "inactive": "Projeto inativo",
     "responsible_not_found": "Herói responsável não encontrado",
     "responsible_ineligible": "O herói responsável deve ser um usuário ativo com o papel Usuário",
-    "heroes_forbidden": "Apenas administradores podem listar os heróis disponíveis para projetos"
+    "heroes_forbidden": "Apenas administradores podem listar os heróis disponíveis para projetos",
+    "management_forbidden": "Apenas administradores podem criar, editar ou excluir projetos e atualizar suas metas"
   }
 }

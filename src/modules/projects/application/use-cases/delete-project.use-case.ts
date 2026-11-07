@@ -4,10 +4,8 @@ import {
   type TransactionManagerPort,
 } from '@shared/application/ports';
 import { ProjectNotFoundError } from '../../domain/errors/project-not-found.error';
-import {
-  projectScopeFor,
-  type ProjectViewer,
-} from '../../domain/policies/project-visibility.policy';
+import { assertProjectAdministrator } from '../../domain/policies/project-management.policy';
+import type { ProjectViewer } from '../../domain/policies/project-visibility.policy';
 import {
   PROJECT_REPOSITORY,
   type ProjectRepository,
@@ -28,10 +26,11 @@ export class DeleteProjectUseCase {
   ) {}
 
   async execute(input: DeleteProjectInput): Promise<void> {
+    assertProjectAdministrator(input.viewer);
+
     await this.transactionManager.runInTransaction(async () => {
       const project = await this.projectRepository.findByUuidForUpdate(
         input.uuid,
-        projectScopeFor(input.viewer),
       );
 
       if (!project) {

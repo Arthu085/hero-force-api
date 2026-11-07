@@ -1,5 +1,9 @@
 import { INestApplication } from '@nestjs/common';
 import { App } from 'supertest/types';
+import { USER_ABILITY_REPOSITORY } from '@modules/authorization/domain/repositories/user-ability.repository';
+import type { AbilityPair } from '@shared/domain/authorization/ability-pair.type';
+import { Subject } from '@shared/domain/authorization/subject';
+import { Action } from '@shared/domain/enums/action.enum';
 import { type AuthAgent, createAuthAgent } from './helpers/auth-agent';
 import { createTestApp } from './helpers/create-test-app';
 import { createIsolatedUser } from './helpers/isolated-user';
@@ -373,5 +377,78 @@ describe('Projects (e2e)', () => {
     await admin.delete(`/api/projects/${project.uuid}`).expect(200);
     await admin.get(`/api/projects/${project.uuid}`).expect(404);
     await admin.delete(`/api/projects/${project.uuid}`).expect(404);
+  });
+
+  // Granting write abilities through PATCH /roles/:uuid/abilities would change the shared USER
+  // role that parallel suites assert, so a separate app grants every PROJECT ability instead.
+  // Passport registers its strategies globally, so that app stays open until the last test.
+  describe('with every PROJECT ability granted to a hero', () => {
+    let grantingApp: INestApplication<App>;
+
+    beforeAll(async () => {
+      const projectAbilities: AbilityPair[] = Object.values(Action).map(
+        (action) => ({ action, subject: Subject.PROJECT }),
+      );
+
+      grantingApp = await createTestApp({
+        override: (builder) =>
+          builder.overrideProvider(USER_ABILITY_REPOSITORY).useValue({
+            findGrantedAbilities: () => Promise.resolve(projectAbilities),
+          }),
+      });
+    });
+
+    afterAll(async () => {
+      await grantingApp.close();
+    });
+
+    it('keeps the hero read-only', async () => {
+      const credentials = await createIsolatedUser(grantingApp);
+      const granted = await createAuthAgent(grantingApp, credentials);
+      const grantedUuid = await uuidOf(granted);
+      const project = await createProject('Granted project', grantedUuid);
+
+      const forbidden =
+        'Only administrators can create, edit, or delete projects and update their goals';
+
+      const attempts = [
+        () =>
+          granted.post('/api/projects').send({
+            name: 'Mine',
+            description: 'Self-assigned.',
+            responsibleUuid: grantedUuid,
+          }),
+        () =>
+          granted
+            .patch(`/api/projects/${project.uuid}`)
+            .send({ responsibleUuid: heroUuid }),
+        () =>
+          granted
+            .patch(`/api/projects/${project.uuid}/goals`)
+            .send({ goals: [{ goal: 'AGILITY', progress: 100 }] }),
+        () => granted.delete(`/api/projects/${project.uuid}`),
+      ];
+
+      for (const attempt of attempts) {
+        const response = await attempt()
+          .set('Accept-Language', 'en')
+          .expect(403);
+
+        expect((response.body as { message: string }).message).toBe(forbidden);
+      }
+
+      const kept = await granted
+        .get(`/api/projects/${project.uuid}`)
+        .expect(200);
+
+      expect((kept.body as EnvelopeBody<ProjectShape>).data).toMatchObject({
+        name: 'Granted project',
+        progress: 0,
+        responsible: { uuid: grantedUuid },
+      });
+      const notTheirs = await createProject('Not theirs', heroUuid);
+
+      await granted.get(`/api/projects/${notTheirs.uuid}`).expect(404);
+    });
   });
 });

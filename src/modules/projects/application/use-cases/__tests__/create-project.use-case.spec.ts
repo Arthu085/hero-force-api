@@ -1,3 +1,4 @@
+import { buildProjectAdmin } from '@test/support/builders/project.builder';
 import { mockOf } from '@test/support/mocks/mock-of';
 import type { TransactionManagerPort } from '@shared/application/ports';
 import { RecordStatus } from '@shared/domain/enums/record-status.enum';
@@ -43,7 +44,7 @@ describe('CreateProjectUseCase', () => {
     name: 'Operation Skyfall',
     description: 'Stop the meteor shower.',
     responsibleUuid: 'hero-uuid',
-    actorId: 1,
+    viewer: buildProjectAdmin(1),
   };
 
   it('creates a PENDING project with six goals for an eligible hero', async () => {
