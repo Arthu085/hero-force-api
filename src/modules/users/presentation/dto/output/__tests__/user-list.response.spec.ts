@@ -6,6 +6,7 @@ import { RecordStatus } from '@shared/domain/enums/record-status.enum';
 import { Action } from '@shared/domain/enums/action.enum';
 import { Subject } from '@shared/domain/authorization/subject';
 import { UserListResponseDto } from '../user-list.response';
+import { CharacterCode } from '@modules/characters';
 import { buildUser } from '@test/support/builders/user.builder';
 
 function buildRole(): RoleEntity {
@@ -103,5 +104,24 @@ describe('UserListResponseDto.fromDomain', () => {
     const dto = UserListResponseDto.fromDomain(buildUser(), translate);
 
     expect(dto.roles).toEqual([]);
+  });
+
+  it('maps the selected character from the catalog', () => {
+    const dto = UserListResponseDto.fromDomain(
+      buildUser({ character: CharacterCode.BLACK_PANTHER }),
+      (key: string) => key,
+    );
+
+    expect(dto.character).toMatchObject({
+      code: CharacterCode.BLACK_PANTHER,
+      name: 'Black Panther',
+      avatarPath: '/characters/black-panther.svg',
+    });
+  });
+
+  it('maps no character as null', () => {
+    const dto = UserListResponseDto.fromDomain(buildUser(), (key) => key);
+
+    expect(dto.character).toBeNull();
   });
 });

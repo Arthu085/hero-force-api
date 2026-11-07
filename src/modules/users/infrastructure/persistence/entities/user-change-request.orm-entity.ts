@@ -9,6 +9,7 @@ import {
 } from 'typeorm';
 import { BaseTechnicalOrmEntity } from '@shared/infrastructure/persistence/base-technical.orm-entity';
 import { RoleOrmEntity } from '@modules/authorization/infrastructure/persistence/entities/role.orm-entity';
+import { CharacterCode } from '@modules/characters';
 import { UserChangeRequestStatus } from '../../../domain/enums/user-change-request-status.enum';
 import { UserOrmEntity } from './user.orm-entity';
 
@@ -71,6 +72,15 @@ export class UserChangeRequestOrmEntity extends BaseTechnicalOrmEntity {
   currentEmail!: string;
 
   @Column({
+    name: 'current_character',
+    type: 'enum',
+    enum: CharacterCode,
+    nullable: true,
+    comment: 'Target character when the request was made; null when none.',
+  })
+  currentCharacter!: CharacterCode | null;
+
+  @Column({
     name: 'requested_name',
     type: 'varchar',
     length: 150,
@@ -87,6 +97,15 @@ export class UserChangeRequestOrmEntity extends BaseTechnicalOrmEntity {
     comment: 'Normalized email applied on approval.',
   })
   requestedEmail!: string;
+
+  @Column({
+    name: 'requested_character',
+    type: 'enum',
+    enum: CharacterCode,
+    nullable: true,
+    comment: 'Character applied on approval; null removes it.',
+  })
+  requestedCharacter!: CharacterCode | null;
 
   @Column({
     name: 'expires_at',

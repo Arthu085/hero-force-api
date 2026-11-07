@@ -49,6 +49,7 @@ describe('CreateUserUseCase (integration)', () => {
     email: 'jane@example.com',
     password: 'plain-password',
     roleUuids: [],
+    character: null,
     actorId: null,
   };
 

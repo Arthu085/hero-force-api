@@ -10,8 +10,9 @@ Swagger; this document covers the rules behind them.
 ## Public API
 
 - `index.ts`: `RoleEntity`, `RoleEnum`, `ROLE_REPOSITORY`/`RoleRepository`,
-  `USER_ABILITY_REPOSITORY`/`UserAbilityRepository` (for `GET /users/me/abilities`), and
-  `assertRolesResolved`, consumed by `users`.
+  `USER_ABILITY_REPOSITORY`/`UserAbilityRepository` (for `GET /users/me/abilities`),
+  `assertRolesResolved`, and `RoleNotFoundError`/`InactiveRoleError` (for registration's default
+  role), consumed by `users`.
 - `presentation.ts`: `AbilitiesGuard` (bound globally by `auth`) and `RoleListResponseDto` (embedded
   in `users` responses).
 - `persistence.ts`: `RoleOrmEntity`, `RoleMapper`, and the roles, abilities, and role-abilities

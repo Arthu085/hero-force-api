@@ -177,6 +177,7 @@ describe('admin change requests (integration)', () => {
   async function addUser(name: string, email: string): Promise<UserEntity> {
     return users.create(
       UserEntity.create({
+        character: null,
         uuid: randomUUID(),
         name,
         email,
@@ -247,8 +248,18 @@ describe('admin change requests (integration)', () => {
           uuid: randomUUID(),
           targetUserId: target.id,
           requestedBy: requester.id,
-          current: { name: 'Target', email: target.email, roles: [] },
-          requested: { name: 'Bypass', email: target.email, roles: [] },
+          current: {
+            character: null,
+            name: 'Target',
+            email: target.email,
+            roles: [],
+          },
+          requested: {
+            character: null,
+            name: 'Bypass',
+            email: target.email,
+            roles: [],
+          },
           expiresAt: new Date(Date.now() + 60_000),
         }),
       ),
@@ -320,6 +331,7 @@ describe('admin change requests (integration)', () => {
     const current = await users.findById(target.id);
     await users.update(
       current!.withProfile({
+        character: null,
         name: 'Changed Elsewhere',
         email: current!.email,
         roles: current!.roles,

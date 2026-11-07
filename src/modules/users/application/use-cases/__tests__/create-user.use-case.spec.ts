@@ -65,6 +65,7 @@ describe('CreateUserUseCase', () => {
     email: 'jane@example.com',
     password: 'plain-password',
     roleUuids: ['role-uuid'],
+    character: null,
     actorId: 101,
   };
 
@@ -439,7 +440,10 @@ describe('CreateUserUseCase', () => {
     );
 
     await expect(
-      useCase.execute({ ...input, roleUuids: ['admin-role', 'missing-role'] }),
+      useCase.execute({
+        ...input,
+        roleUuids: ['admin-role', 'missing-role'],
+      }),
     ).rejects.toThrow(RoleNotFoundError);
   });
 });

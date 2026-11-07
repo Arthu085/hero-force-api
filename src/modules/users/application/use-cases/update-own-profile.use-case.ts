@@ -1,4 +1,5 @@
 import { Inject, Injectable, Logger } from '@nestjs/common';
+import type { CharacterCode } from '@modules/characters';
 import { assertRecordActive } from '@shared/domain/policies';
 import { EmailType } from '@shared/domain/enums/email-type.enum';
 import { normalizeEmail } from '@shared/application/filters';
@@ -34,6 +35,7 @@ export interface UpdateOwnProfileInput {
   actorId: number;
   name?: string;
   email?: string;
+  character?: CharacterCode | null;
   currentPassword?: string;
 }
 
@@ -83,7 +85,13 @@ export class UpdateOwnProfileUseCase {
 
         const applied = await this.profileChange.apply(
           user,
-          { name: input.name ?? user.name, email, roles: user.roles },
+          {
+            name: input.name ?? user.name,
+            email,
+            roles: user.roles,
+            character:
+              input.character === undefined ? user.character : input.character,
+          },
           user.id,
         );
 

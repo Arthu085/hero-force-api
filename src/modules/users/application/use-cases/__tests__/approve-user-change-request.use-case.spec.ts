@@ -47,8 +47,14 @@ function pendingRequest(
 ): UserChangeRequestEntity {
   return buildUserChangeRequest({
     targetUserId: 7,
-    current: { name: 'Admin', email: 'admin@example.com', roles: [adminRole] },
+    current: {
+      character: null,
+      name: 'Admin',
+      email: 'admin@example.com',
+      roles: [adminRole],
+    },
     requested: {
+      character: null,
       name: 'Admin Renamed',
       email: 'admin.new@example.com',
       roles: [adminRole, userRole],
@@ -159,6 +165,7 @@ describe('ApproveUserChangeRequestUseCase', () => {
       scenario: 'without an email change',
       request: pendingRequest({
         requested: {
+          character: null,
           name: 'Admin Renamed',
           email: 'admin@example.com',
           roles: [adminRole],

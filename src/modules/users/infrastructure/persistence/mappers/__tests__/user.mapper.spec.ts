@@ -89,6 +89,7 @@ describe('UserMapper', () => {
 
   it('maps a domain UserEntity (new, id=0) to an ORM entity without setting the numeric id', () => {
     const domain = UserEntity.create({
+      character: null,
       uuid: 'user-uuid',
       name: 'Jane Doe',
       email: 'jane@example.com',
@@ -109,6 +110,7 @@ describe('UserMapper', () => {
 
   it('maps a domain UserEntity (persisted, id>0) to an ORM entity preserving the numeric id', () => {
     const domain = UserEntity.reconstitute({
+      character: null,
       id: 7,
       uuid: 'user-uuid',
       status: RecordStatus.ACTIVE,
@@ -132,6 +134,7 @@ describe('UserMapper', () => {
 
   it('maps the soft-delete actor between domain and ORM', () => {
     const deleted = UserEntity.create({
+      character: null,
       uuid: 'user-uuid',
       name: 'Jane Doe',
       email: 'jane@example.com',
@@ -251,6 +254,7 @@ describe('UserMapper', () => {
 
   it('toOrm output never carries creatorName/updaterName', () => {
     const domain = UserEntity.reconstitute({
+      character: null,
       id: 7,
       uuid: 'user-uuid',
       status: RecordStatus.ACTIVE,
@@ -281,6 +285,7 @@ describe('UserMapper', () => {
 
   it('carries updatedAt over onto the ORM entity (regression: role-only updates were silently dropping updated_at)', () => {
     const domain = UserEntity.reconstitute({
+      character: null,
       id: 7,
       uuid: 'user-uuid',
       status: RecordStatus.ACTIVE,
@@ -305,6 +310,7 @@ describe('UserMapper', () => {
   it('leaves updatedAt unset for a new user so the insert uses the same database timestamp as createdAt', () => {
     const orm = UserMapper.toOrm(
       UserEntity.create({
+        character: null,
         uuid: 'user-uuid',
         name: 'Jane Doe',
         email: 'jane@example.com',
@@ -344,6 +350,7 @@ describe('UserMapper', () => {
     const confirmedAt = new Date('2026-01-05T00:00:00.000Z');
 
     const domain = UserEntity.reconstitute({
+      character: null,
       id: 7,
       uuid: 'user-uuid',
       status: RecordStatus.ACTIVE,

@@ -18,6 +18,7 @@ export function buildUser(
     password: 'hashed-password',
     emailConfirmedAt: new Date(),
     roles: [],
+    character: null,
     createdAt: new Date(),
     updatedAt: new Date(),
     deletedAt: null,
@@ -37,6 +38,7 @@ export function buildNewUser(
     email: `${randomUUID()}@example.com`,
     password: 'hashed-password',
     roles: [],
+    character: null,
     createdBy: null,
     ...overrides,
   });

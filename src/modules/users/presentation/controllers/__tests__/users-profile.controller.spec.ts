@@ -292,7 +292,7 @@ describe('UsersProfileController', () => {
       expect(tags).toContain('users');
     });
 
-    it('documents a body that exposes only name, email, and currentPassword', () => {
+    it('documents a body that exposes only name, email, characterCode, and currentPassword', () => {
       const params = Reflect.getMetadata(
         DECORATORS.API_PARAMETERS,
         updateMeHandler,
@@ -306,6 +306,7 @@ describe('UsersProfileController', () => {
       ) as string[];
 
       expect(properties.map((name) => name.replace(/^:/, '')).sort()).toEqual([
+        'characterCode',
         'currentPassword',
         'email',
         'name',

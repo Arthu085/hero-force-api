@@ -125,6 +125,7 @@ export class UsersManagementController {
       email: dto.email,
       password: dto.password,
       roleUuids: dto.roleUuids,
+      character: dto.characterCode ?? null,
       actorId: actor.id,
     });
 
@@ -140,7 +141,7 @@ export class UsersManagementController {
     .tags('users')
     .summary('Update a user')
     .description(
-      'Partial update: omitted fields keep their current values. Granting ADMIN requires an active ADMIN actor, and ADMIN can never be removed. Only an active admin can modify an admin; changes to another admin go through POST /users/{uuid}/change-requests. Updating your own profile revokes all of your sessions and clears the auth cookies, so you must log in again; if the email changed, it must be confirmed first.',
+      'Partial update: omitted fields keep their current values, and characterCode null removes the character. Granting ADMIN requires an active ADMIN actor, and ADMIN can never be removed. Only an active admin can modify an admin; changes to another admin go through POST /users/{uuid}/change-requests. Updating your own profile revokes all of your sessions and clears the auth cookies, so you must log in again; if the email changed, it must be confirmed first.',
     )
     .errorResponse(
       HttpStatus.FORBIDDEN,
@@ -166,6 +167,7 @@ export class UsersManagementController {
       name: dto.name,
       email: dto.email,
       roleUuids: dto.roleUuids,
+      character: dto.characterCode,
       actorId: actor.id,
     });
 

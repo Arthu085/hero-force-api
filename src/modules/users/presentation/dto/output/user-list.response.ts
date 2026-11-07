@@ -1,5 +1,6 @@
 import { ApiProperty } from '@nestjs/swagger';
 import { RoleListResponseDto } from '@modules/authorization/presentation';
+import { CharacterResponseDto } from '@modules/characters/presentation';
 import { RecordStatus } from '@shared/domain/enums/record-status.enum';
 import { translateOrFallback } from '@shared/presentation/http';
 import { UserEntity } from '../../../domain/entities/user.entity';
@@ -22,6 +23,9 @@ export class UserListResponseDto {
 
   @ApiProperty({ type: [RoleListResponseDto] })
   roles!: RoleListResponseDto[];
+
+  @ApiProperty({ type: CharacterResponseDto, nullable: true })
+  character!: CharacterResponseDto | null;
 
   static fromDomain(
     user: UserEntity,
@@ -51,5 +55,8 @@ export class UserListResponseDto {
     dto.roles = user.roles.map((role) =>
       RoleListResponseDto.fromDomain(role, translate),
     );
+    dto.character = user.character
+      ? CharacterResponseDto.fromCode(user.character, translate)
+      : null;
   }
 }

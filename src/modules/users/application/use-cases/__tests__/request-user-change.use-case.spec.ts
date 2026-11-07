@@ -148,11 +148,13 @@ describe('RequestUserChangeUseCase', () => {
       name: 'Target Admin',
       email: 'target@example.com',
       roles: [adminRole],
+      character: null,
     });
     expect(request.requested).toEqual({
       name: 'Renamed Admin',
       email: 'new@example.com',
       roles: [adminRole, userRole],
+      character: null,
     });
     expect(request.expiresAt.getTime()).toBeGreaterThanOrEqual(
       before + 2 * 60 * 60 * 1000,
@@ -176,6 +178,7 @@ describe('RequestUserChangeUseCase', () => {
       name: 'Renamed Admin',
       email: 'target@example.com',
       roles: [adminRole],
+      character: null,
     });
   });
 

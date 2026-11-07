@@ -5,6 +5,7 @@ import {
   assertRolesResolved,
   type RoleRepository,
 } from '@modules/authorization';
+import type { CharacterCode } from '@modules/characters';
 import { EmailType } from '@shared/domain/enums/email-type.enum';
 import { normalizeEmail } from '@shared/application/filters';
 import {
@@ -31,6 +32,7 @@ export interface CreateUserInput {
   email: string;
   password: string;
   roleUuids: string[];
+  character: CharacterCode | null;
   actorId: number | null;
 }
 
@@ -84,6 +86,7 @@ export class CreateUserUseCase {
           email,
           password: hashedPassword,
           roles,
+          character: input.character,
           createdBy: input.actorId,
         });
 

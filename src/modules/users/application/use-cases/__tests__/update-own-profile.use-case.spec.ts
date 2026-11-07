@@ -1,5 +1,6 @@
 import { Logger } from '@nestjs/common';
 import { RoleEnum } from '@modules/authorization/domain/enums/role.enum';
+import { CharacterCode } from '@modules/characters';
 import type { RoleEntity } from '@modules/authorization/domain/entities/role.entity';
 import { EmailSchedulingUnavailableError } from '@shared/application/ports';
 import { EmailType } from '@shared/domain/enums/email-type.enum';
@@ -136,6 +137,25 @@ describe('UpdateOwnProfileUseCase', () => {
 
     expect(revokeSessions).toHaveBeenCalledWith(7);
     expect(schedule).not.toHaveBeenCalled();
+  });
+
+  it('sets, keeps, and removes the character without requiring the password', async () => {
+    const withCharacter = buildUser({
+      ...regularUser,
+      character: CharacterCode.THOR,
+    });
+
+    const { useCase, update } = buildHarness({ user: withCharacter });
+
+    await useCase.execute({ actorId: 7, character: CharacterCode.BATMAN });
+    await useCase.execute({ actorId: 7, name: 'Jane Renamed' });
+    await useCase.execute({ actorId: 7, character: null });
+
+    const written = (update.mock.calls as [UserEntity][]).map(
+      ([user]) => user.character,
+    );
+
+    expect(written).toEqual([CharacterCode.BATMAN, CharacterCode.THOR, null]);
   });
 
   it('revokes every session on an empty update', async () => {

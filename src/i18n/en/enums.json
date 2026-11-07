@@ -8,5 +8,11 @@
     "read": "Read",
     "update": "Update",
     "delete": "Delete"
+  },
+  "character_universe": {
+    "marvel": "Marvel",
+    "dc": "DC",
+    "dark_horse": "Dark Horse",
+    "image": "Image"
   }
 }

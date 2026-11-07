@@ -24,7 +24,8 @@
     "email_confirmed": "Email confirmed successfully",
     "confirmation_sent": "If the email is registered, a confirmation link will be sent",
     "change_request_rejected": "Change request rejected",
-    "password_changed": "Password changed successfully"
+    "password_changed": "Password changed successfully",
+    "registration_received": "Registration received. If the email can be used, a confirmation link will be sent; confirm it before logging in"
   },
   "change_request_status": {
     "pending": "Pending",

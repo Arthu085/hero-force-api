@@ -1,5 +1,6 @@
 import { RoleEnum } from '@modules/authorization/domain/enums/role.enum';
 import { Logger } from '@nestjs/common';
+import { CharacterCode } from '@modules/characters';
 import type { RoleEntity } from '@modules/authorization/domain/entities/role.entity';
 import type { RoleRepository } from '@modules/authorization/domain/repositories/role.repository';
 import { InactiveRoleError } from '@modules/authorization/domain/errors/inactive-role.error';
@@ -177,13 +178,17 @@ describe('UpdateUserUseCase', () => {
     expect(result).toBe(updatedUser);
   });
 
-  it('keeps the current name, email, and roles for omitted fields, without resolving roles or checking email uniqueness', async () => {
+  it('keeps the current name, email, roles, and character for omitted fields, without resolving roles or checking email uniqueness', async () => {
     const currentRoles = [buildRole('role-1')];
 
     const { user: existingUser, withProfile } =
       buildExistingUser('jane@example.com');
 
-    Object.assign(existingUser, { name: 'Jane Doe', roles: currentRoles });
+    Object.assign(existingUser, {
+      name: 'Jane Doe',
+      roles: currentRoles,
+      character: CharacterCode.SUPERMAN,
+    });
 
     const findByEmail = jest.fn();
     const findByUuids = jest.fn();
@@ -214,11 +219,45 @@ describe('UpdateUserUseCase', () => {
       name: 'Jane Doe',
       email: 'jane@example.com',
       roles: currentRoles,
+      character: CharacterCode.SUPERMAN,
       actorId: 102,
     });
     expect(findByUuids).not.toHaveBeenCalled();
     expect(findByEmail).not.toHaveBeenCalled();
     expect(schedule).not.toHaveBeenCalled();
+  });
+
+  it.each([
+    ['sets', CharacterCode.WONDER_WOMAN],
+    ['removes with null', null],
+  ])('%s the character', async (_label, character) => {
+    const { user: existingUser, withProfile } =
+      buildExistingUser('jane@example.com');
+
+    Object.assign(existingUser, {
+      name: 'Jane Doe',
+      character: CharacterCode.SUPERMAN,
+    });
+
+    const useCase = buildUseCase({
+      userRepository: mockOf<UserRepository>({
+        lockAdminRoster: jest.fn().mockResolvedValue(undefined),
+        findById: jest.fn().mockResolvedValue(null),
+        findByUuidForUpdate: jest.fn().mockResolvedValue(existingUser),
+        update: jest.fn().mockResolvedValue({ uuid: 'user-1' }),
+      }),
+      roleRepository: mockOf<RoleRepository>({}),
+      emailOutbox: buildEmailOutbox().port,
+      transactionManager,
+      tokenRepository: stubTokenRepository(),
+      revokers: stubRevokers(),
+    });
+
+    await useCase.execute({ uuid: 'user-1', character, actorId: 102 });
+
+    expect(withProfile).toHaveBeenCalledWith(
+      expect.objectContaining({ character }),
+    );
   });
 
   it('forbids a non-admin actor from changing only the email of an admin', async () => {

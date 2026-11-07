@@ -24,7 +24,8 @@
     "email_confirmed": "E-mail confirmado com sucesso",
     "confirmation_sent": "Se o e-mail estiver cadastrado, um link de confirmação será enviado",
     "change_request_rejected": "Solicitação de alteração rejeitada",
-    "password_changed": "Senha alterada com sucesso"
+    "password_changed": "Senha alterada com sucesso",
+    "registration_received": "Cadastro recebido. Se o e-mail puder ser usado, um link de confirmação será enviado; confirme-o antes de entrar"
   },
   "change_request_status": {
     "pending": "Pendente",

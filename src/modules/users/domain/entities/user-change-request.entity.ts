@@ -1,4 +1,5 @@
 import { RoleEntity } from '@modules/authorization';
+import { CharacterCode } from '@modules/characters';
 import { BaseTechnicalEntity } from '@shared/domain/entities/base-technical.entity';
 import { UserChangeRequestStatus } from '../enums/user-change-request-status.enum';
 import { UserEntity } from './user.entity';
@@ -7,6 +8,7 @@ export interface UserProfileValues {
   name: string;
   email: string;
   roles: RoleEntity[];
+  character: CharacterCode | null;
 }
 
 export interface OpenUserChangeRequestInput {
@@ -94,6 +96,7 @@ export class UserChangeRequestEntity extends BaseTechnicalEntity {
     return (
       user.name === this.current.name &&
       user.email === this.current.email &&
+      user.character === this.current.character &&
       sameRoles(user.roles, this.current.roles)
     );
   }

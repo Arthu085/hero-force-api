@@ -2,6 +2,8 @@ import { ApiPropertyOptional } from '@nestjs/swagger';
 import {
   ArrayNotEmpty,
   IsArray,
+  IsEnum,
+  IsOptional,
   IsString,
   IsUUID,
   Matches,
@@ -9,6 +11,7 @@ import {
   ValidateIf,
 } from 'class-validator';
 import { i18nValidationMessage } from 'nestjs-i18n';
+import { CharacterCode } from '@modules/characters';
 import {
   NON_BLANK_PATTERN,
   USER_NAME_MAX_LENGTH,
@@ -50,4 +53,16 @@ export class UpdateUserDto {
     message: i18nValidationMessage('validation.IS_UUID'),
   })
   roleUuids?: string[];
+
+  @ApiPropertyOptional({
+    enum: CharacterCode,
+    nullable: true,
+    description:
+      'Superhero character from GET /characters. Omitted keeps the current one; null removes it.',
+  })
+  @IsOptional()
+  @IsEnum(CharacterCode, {
+    message: i18nValidationMessage('validation.IS_ENUM'),
+  })
+  characterCode?: CharacterCode | null;
 }

@@ -7,6 +7,7 @@ import {
   type RoleEntity,
   type RoleRepository,
 } from '@modules/authorization';
+import type { CharacterCode } from '@modules/characters';
 import { assertRecordActive } from '@shared/domain/policies';
 import { EmailType } from '@shared/domain/enums/email-type.enum';
 import { normalizeEmail } from '@shared/application/filters';
@@ -42,6 +43,7 @@ export interface RequestUserChangeInput {
   name?: string;
   email?: string;
   roleUuids?: string[];
+  character?: CharacterCode | null;
   actorId: number;
 }
 
@@ -110,8 +112,21 @@ export class RequestUserChangeUseCase {
             uuid: randomUUID(),
             targetUserId: user.id,
             requestedBy: input.actorId,
-            current: { name: user.name, email: user.email, roles: user.roles },
-            requested: { name: input.name ?? user.name, email, roles },
+            current: {
+              name: user.name,
+              email: user.email,
+              roles: user.roles,
+              character: user.character,
+            },
+            requested: {
+              name: input.name ?? user.name,
+              email,
+              roles,
+              character:
+                input.character === undefined
+                  ? user.character
+                  : input.character,
+            },
             expiresAt: new Date(Date.now() + ttlMs),
           }),
         );

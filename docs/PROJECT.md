@@ -7,7 +7,8 @@ What this API does, which modules it has, and the data it seeds. Engineering rul
 ## Purpose
 
 The Hero Force REST API. It provides the Hero Force web client with authentication through
-cookie-based sessions, user and role management with administrator safeguards, ability-based
+cookie-based sessions, public self-registration, user and role management with administrator
+safeguards, an optional superhero character per user from a fixed catalog, ability-based
 authorization, request auditing, and transactional email delivery (email confirmation, password
 reset, and account notifications).
 
@@ -26,13 +27,15 @@ reset, and account notifications).
 | Module | Responsibility | HTTP routes |
 | --- | --- | --- |
 | [`auth`](modules/auth.md) | Login, refresh, logout, password recovery, CSRF token issuance; binds the global CSRF, JWT, and ability guards | Yes |
-| [`users`](modules/users.md) | User management, role assignment, admin protection and change approvals, self-service profile and password change, email confirmation | Yes |
+| [`users`](modules/users.md) | Public self-registration, user management, role and character assignment, admin protection and change approvals, self-service profile and password change, email confirmation | Yes |
+| [`characters`](modules/characters.md) | Fixed, code-defined catalog of superhero characters users may pick | Yes |
 | [`authorization`](modules/authorization.md) | Fixed Role/Ability catalog, role grant management, and the `AbilitiesGuard` | Yes |
 | [`audit`](modules/audit.md) | Append-only trail of HTTP requests on opted-in routes | No |
 | [`email-quota`](modules/email-quota.md) | Per-recipient, per-type, per-UTC-day send cap; fails closed | No |
 | [`email-outbox`](modules/email-outbox.md) | Durable PostgreSQL outbox and in-process worker that delivers transactional emails with retries | No |
 
-There is no self-registration: users are created by an administrator or by the seed.
+Users register themselves through `POST /users/register` (always as `USER`), or are created by an
+administrator or by the seed.
 
 ## Seeded data
 

@@ -125,7 +125,9 @@ including a `docs/modules/<name>.md` and a row in [`PROJECT.md`](PROJECT.md#modu
 - Auth tokens travel only in signed httpOnly cookies. Never return them in a body or read an
   `Authorization` header. State-changing requests send the CSRF token in `X-CSRF-Token`. Mechanism:
   [`modules/auth.md`](modules/auth.md).
-- No self-registration endpoint.
+- Self-registration is the single public `POST /users/register`: it always assigns the `USER` role,
+  never reads roles or abilities from the body, keeps email confirmation before login, and answers a
+  registered email exactly like a new one ([`modules/users.md`](modules/users.md#self-registration)).
 - Human passwords are hashed with argon2 through `PasswordHasher`. High-entropy machine tokens
   (refresh, password reset, email confirmation) go through `TokenHasher` (SHA-256, constant-time
   comparison). Never mix the two.

@@ -1,6 +1,7 @@
 import { BaseAuditedEntity } from '@shared/domain/entities/base-audited.entity';
 import { RecordStatus } from '@shared/domain/enums/record-status.enum';
 import { RoleEntity } from '@modules/authorization';
+import { CharacterCode } from '@modules/characters';
 
 export interface CreateUserInput {
   uuid: string;
@@ -8,6 +9,7 @@ export interface CreateUserInput {
   email: string;
   password: string;
   roles: RoleEntity[];
+  character: CharacterCode | null;
   createdBy: number | null;
 }
 
@@ -20,6 +22,7 @@ export interface ReconstituteUserInput {
   password: string;
   emailConfirmedAt: Date | null;
   roles: RoleEntity[];
+  character: CharacterCode | null;
   createdAt: Date;
   updatedAt: Date;
   deletedAt: Date | null;
@@ -34,6 +37,7 @@ export interface UpdateUserProfileInput {
   name: string;
   email: string;
   roles: RoleEntity[];
+  character: CharacterCode | null;
   actorId: number | null;
 }
 
@@ -49,6 +53,7 @@ type UserEntityChanges = Partial<
     | 'password'
     | 'emailConfirmedAt'
     | 'roles'
+    | 'character'
   >
 >;
 
@@ -68,6 +73,7 @@ export class UserEntity extends BaseAuditedEntity {
     readonly password: string,
     readonly emailConfirmedAt: Date | null,
     readonly roles: RoleEntity[],
+    readonly character: CharacterCode | null,
     readonly creatorName: string | null,
     readonly updaterName: string | null,
   ) {
@@ -102,6 +108,7 @@ export class UserEntity extends BaseAuditedEntity {
       input.password,
       null,
       input.roles,
+      input.character,
       null,
       null,
     );
@@ -123,6 +130,7 @@ export class UserEntity extends BaseAuditedEntity {
       input.password,
       input.emailConfirmedAt,
       input.roles,
+      input.character,
       input.creatorName ?? null,
       input.updaterName ?? null,
     );
@@ -137,6 +145,7 @@ export class UserEntity extends BaseAuditedEntity {
       email: input.email,
       emailConfirmedAt: emailChanged ? null : this.emailConfirmedAt,
       roles: input.roles,
+      character: input.character,
     });
   }
 
@@ -179,6 +188,7 @@ export class UserEntity extends BaseAuditedEntity {
       password: this.password,
       emailConfirmedAt: this.emailConfirmedAt,
       roles: this.roles,
+      character: this.character,
       creatorName: this.creatorName,
       updaterName: this.updaterName,
       ...changes,

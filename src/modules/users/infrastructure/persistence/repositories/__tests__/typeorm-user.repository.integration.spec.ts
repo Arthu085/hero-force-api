@@ -76,6 +76,7 @@ describe('TypeOrmUserRepository (integration)', () => {
     roles: Array<ReturnType<typeof buildRoleEntityStub>>,
   ): UserEntity {
     return UserEntity.create({
+      character: null,
       uuid: randomUUID(),
       name: 'Jane Doe',
       email,
@@ -87,6 +88,7 @@ describe('TypeOrmUserRepository (integration)', () => {
 
   function buildNewNamedUser(name: string, email: string): UserEntity {
     return UserEntity.create({
+      character: null,
       uuid: randomUUID(),
       name,
       email,
@@ -367,6 +369,7 @@ describe('TypeOrmUserRepository (integration)', () => {
       await expect(
         repository.update(
           user.withProfile({
+            character: null,
             name: user.name,
             email: 'taken@example.com',
             roles: [],
@@ -391,6 +394,7 @@ describe('TypeOrmUserRepository (integration)', () => {
       const moveTo = (user: UserEntity) =>
         repository.update(
           user.withProfile({
+            character: null,
             name: user.name,
             email: 'contested@example.com',
             roles: [],
@@ -415,6 +419,7 @@ describe('TypeOrmUserRepository (integration)', () => {
       );
 
       const duplicateUuid = UserEntity.create({
+        character: null,
         uuid: existing.uuid,
         name: 'John Doe',
         email: 'john@example.com',
@@ -636,6 +641,7 @@ describe('TypeOrmUserRepository (integration)', () => {
     );
 
     const updated = created.withProfile({
+      character: null,
       name: 'Jane Updated',
       email: 'jane.updated@example.com',
       roles: [buildRoleEntityStub(roleB)],
@@ -673,6 +679,7 @@ describe('TypeOrmUserRepository (integration)', () => {
     await new Promise((r) => setTimeout(r, 5));
 
     const updated = created.withProfile({
+      character: null,
       name: created.name,
       email: created.email,
       roles: [buildRoleEntityStub(roleB)],
@@ -767,6 +774,7 @@ describe('TypeOrmUserRepository (integration)', () => {
       createdBy: number | null,
     ): UserEntity {
       return UserEntity.create({
+        character: null,
         uuid: randomUUID(),
         name,
         email,
@@ -918,6 +926,7 @@ describe('TypeOrmUserRepository (integration)', () => {
 
       return repository.create(
         UserEntity.create({
+          character: null,
           uuid: randomUUID(),
           name: 'Jane Doe',
           email: 'jane@example.com',

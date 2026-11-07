@@ -90,6 +90,7 @@ export class UserChangeRequestsController {
       name: dto.name,
       email: dto.email,
       roleUuids: dto.roleUuids,
+      character: dto.characterCode,
       actorId: actor.id,
     });
 

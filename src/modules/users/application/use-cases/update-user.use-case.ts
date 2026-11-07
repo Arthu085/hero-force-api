@@ -5,6 +5,7 @@ import {
   type RoleEntity,
   type RoleRepository,
 } from '@modules/authorization';
+import type { CharacterCode } from '@modules/characters';
 import { assertRecordActive } from '@shared/domain/policies';
 import { normalizeEmail } from '@shared/application/filters';
 import {
@@ -37,6 +38,7 @@ export interface UpdateUserInput {
   name?: string;
   email?: string;
   roleUuids?: string[];
+  character?: CharacterCode | null;
   actorId: number | null;
 }
 
@@ -96,7 +98,13 @@ export class UpdateUserUseCase {
 
       return this.profileChange.apply(
         user,
-        { name: input.name ?? user.name, email, roles },
+        {
+          name: input.name ?? user.name,
+          email,
+          roles,
+          character:
+            input.character === undefined ? user.character : input.character,
+        },
         input.actorId,
       );
     });

@@ -15,6 +15,7 @@ describe('UsersModule routes', () => {
         isPublic,
       ]),
     ).toEqual([
+      ['UserRegistrationController', 'POST /users/register', true],
       ['UserEmailConfirmationController', 'POST /users/confirm-email', true],
       [
         'UserEmailConfirmationController',
