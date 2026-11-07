@@ -72,6 +72,7 @@ export class UserProfileChangeService {
         name: values.name,
         email: values.email,
         roles: values.roles,
+        character: values.character,
         actorId,
       }),
     );

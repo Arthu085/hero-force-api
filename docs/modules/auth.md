@@ -4,7 +4,8 @@
 > · Related: [`users.md`](users.md), [`email-outbox.md`](email-outbox.md)
 
 Login, refresh, logout, password recovery, and CSRF token issuance. The module also binds the global
-CSRF, JWT, and ability guards. There is **no self-registration** and **no `GET /auth/me`**:
+CSRF, JWT, and ability guards. Self-registration belongs to `users`
+([`POST /users/register`](users.md#self-registration)), and there is **no `GET /auth/me`**:
 `GET /users/me` returns the profile, and `login` and `refresh` already return the same
 `UserDetailResponseDto`. Routes and payloads are in Swagger; this document covers the rules behind
 them.
@@ -294,7 +295,7 @@ Production requirements are in [`infrastructure.md`](../infrastructure.md#config
 
 ## Not included
 
-- No self-registration and no `GET /auth/me`.
+- No registration route (it is `users`' `POST /users/register`) and no `GET /auth/me`.
 - No password-change route: a signed-in user changes their password through `users`'
   `PATCH /users/me/password` ([`users.md`](users.md#self-service-password-change)).
 - No ability check on `logout`: any authenticated user may sign themselves out.

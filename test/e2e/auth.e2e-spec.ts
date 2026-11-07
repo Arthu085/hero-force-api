@@ -366,10 +366,10 @@ describe('Auth (e2e)', () => {
       .expect(401);
   });
 
-  it('enforces the seeded ability grants end-to-end: READ·USER-only user gets 200 on /users but 403 on /roles', async () => {
+  it('enforces the seeded ability grants end-to-end: a USER-role user without abilities gets 403 on /users and /roles', async () => {
     const agent = await createAuthAgent(app, USER_CREDENTIALS);
 
-    await agent.get('/api/users').expect(200);
+    await agent.get('/api/users').expect(403);
     await agent.get('/api/roles').expect(403);
   });
 

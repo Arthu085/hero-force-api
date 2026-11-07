@@ -10,6 +10,7 @@ import {
 } from 'typeorm';
 import { BaseOrmEntity } from '@shared/infrastructure/persistence/base.orm-entity';
 import { RoleOrmEntity } from '@modules/authorization/infrastructure/persistence/entities/role.orm-entity';
+import { CharacterCode } from '@modules/characters';
 
 export const USERS_EMAIL_UNIQUE_INDEX = 'uq_users_email_active';
 
@@ -55,6 +56,16 @@ export class UserOrmEntity extends BaseOrmEntity {
       'When the user confirmed ownership of their email; null until then.',
   })
   emailConfirmedAt!: Date | null;
+
+  @Column({
+    name: 'character',
+    type: 'enum',
+    enum: CharacterCode,
+    nullable: true,
+    comment:
+      'Superhero character chosen by the user from the fixed catalog; null when none.',
+  })
+  character!: CharacterCode | null;
 
   @Column({
     name: 'created_by',

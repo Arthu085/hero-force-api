@@ -20,6 +20,7 @@ import { ListMyUserChangeRequestsUseCase } from './application/use-cases/list-my
 import { ListOwnAbilitiesUseCase } from './application/use-cases/list-own-abilities.use-case';
 import { ListUsersUseCase } from './application/use-cases/list-users.use-case';
 import { RejectUserChangeRequestUseCase } from './application/use-cases/reject-user-change-request.use-case';
+import { RegisterUserUseCase } from './application/use-cases/register-user.use-case';
 import { RequestUserChangeUseCase } from './application/use-cases/request-user-change.use-case';
 import { ResendEmailConfirmationUseCase } from './application/use-cases/resend-email-confirmation.use-case';
 import { UpdateOwnProfileUseCase } from './application/use-cases/update-own-profile.use-case';
@@ -51,6 +52,7 @@ import { selectUserNotifier } from './infrastructure/notifications/user-notifier
 import { EmailConfirmationTokenCleanupScheduler } from './infrastructure/scheduling/email-confirmation-token-cleanup.scheduler';
 import { UserChangeRequestsController } from './presentation/controllers/user-change-requests.controller';
 import { UserEmailConfirmationController } from './presentation/controllers/user-email-confirmation.controller';
+import { UserRegistrationController } from './presentation/controllers/user-registration.controller';
 import { UsersManagementController } from './presentation/controllers/users-management.controller';
 import { UsersProfileController } from './presentation/controllers/users-profile.controller';
 
@@ -67,6 +69,7 @@ import { UsersProfileController } from './presentation/controllers/users-profile
     CoreHashingModule,
   ],
   controllers: [
+    UserRegistrationController,
     UserEmailConfirmationController,
     UsersProfileController,
     UserChangeRequestsController,
@@ -105,6 +108,7 @@ import { UsersProfileController } from './presentation/controllers/users-profile
     IssueEmailConfirmationTokenService,
     UserProfileChangeService,
     CreateUserUseCase,
+    RegisterUserUseCase,
     ListUsersUseCase,
     GetUserUseCase,
     ListOwnAbilitiesUseCase,

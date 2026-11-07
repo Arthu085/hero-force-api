@@ -13,6 +13,14 @@ interface FakeRoleRow {
   abilities?: unknown[];
 }
 
+const READ_USER = { action: Action.READ, subject: Subject.USER };
+
+// USER ships without default grants, so specs that exercise default-grant
+// resolution give it one for the duration of the test.
+function grantUserReadUserByDefault(): void {
+  jest.replaceProperty(ROLE_ABILITY_GRANTS, RoleEnum.USER, [READ_USER]);
+}
+
 describe('RolesSeeder', () => {
   afterEach(() => {
     jest.restoreAllMocks();
@@ -83,20 +91,18 @@ describe('RolesSeeder', () => {
   });
 
   it('queries the default grants of the role being created', async () => {
+    grantUserReadUserByDefault();
+
     const { manager, abilityFind } = buildManager([{ name: RoleEnum.ADMIN }]);
 
     await new RolesSeeder().run(manager);
 
     expect(abilityFind).toHaveBeenCalledTimes(1);
-    expect(abilityFind).toHaveBeenCalledWith({
-      where: [{ action: Action.READ, subject: Subject.USER }],
-    });
+    expect(abilityFind).toHaveBeenCalledWith({ where: [READ_USER] });
   });
 
   // An empty `where` array would match every ability, granting the whole catalog.
   it('creates a role with no grants when its default grant list is empty', async () => {
-    jest.replaceProperty(ROLE_ABILITY_GRANTS, RoleEnum.USER, []);
-
     const { manager, rows, abilityFind } = buildManager([
       { name: RoleEnum.ADMIN },
     ]);
@@ -121,6 +127,8 @@ describe('RolesSeeder', () => {
   });
 
   it('leaves an INACTIVE default ability out of a new role', async () => {
+    grantUserReadUserByDefault();
+
     const { manager, rows } = buildManager([{ name: RoleEnum.ADMIN }], 0, 1);
 
     await new RolesSeeder().run(manager);
@@ -131,6 +139,8 @@ describe('RolesSeeder', () => {
   });
 
   it('fails when default abilities of a new role have not been seeded yet', async () => {
+    grantUserReadUserByDefault();
+
     const { manager, save } = buildManager([{ name: RoleEnum.ADMIN }], 1);
 
     await expect(new RolesSeeder().run(manager)).rejects.toThrow(

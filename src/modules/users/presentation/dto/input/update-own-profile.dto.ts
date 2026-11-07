@@ -7,6 +7,7 @@ import { UpdateUserDto } from './update-user.dto';
 export class UpdateOwnProfileDto extends PickType(UpdateUserDto, [
   'name',
   'email',
+  'characterCode',
 ] as const) {
   @ApiPropertyOptional({
     description:

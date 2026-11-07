@@ -16,6 +16,7 @@ export class UserMapper {
       password: orm.password,
       emailConfirmedAt: orm.emailConfirmedAt,
       roles: (orm.roles ?? []).map((role) => RoleMapper.toDomain(role)),
+      character: orm.character,
       createdAt: orm.createdAt,
       updatedAt: orm.updatedAt,
       deletedAt: orm.deletedAt,
@@ -45,6 +46,7 @@ export class UserMapper {
     orm.email = domain.email;
     orm.password = domain.password;
     orm.emailConfirmedAt = domain.emailConfirmedAt;
+    orm.character = domain.character;
     orm.createdBy = domain.createdBy;
     orm.updatedBy = domain.updatedBy;
     orm.deletedBy = domain.deletedBy;

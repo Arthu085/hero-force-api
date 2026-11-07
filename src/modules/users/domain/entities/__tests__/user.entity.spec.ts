@@ -32,6 +32,7 @@ function buildConfirmedUser(): UserEntity {
     createdBy: 101,
     updatedBy: 101,
     deletedBy: null,
+    character: null,
   });
 }
 
@@ -46,6 +47,7 @@ describe('UserEntity', () => {
       password: 'hashed-password',
       roles,
       createdBy: 101,
+      character: null,
     });
 
     expect(user.uuid).toBe('user-uuid');
@@ -70,6 +72,7 @@ describe('UserEntity', () => {
       password: 'hashed-password',
       roles: [],
       createdBy: null,
+      character: null,
     });
 
     expect(user.createdBy).toBeNull();
@@ -84,6 +87,7 @@ describe('UserEntity', () => {
       password: 'hashed-password',
       roles: [],
       createdBy: 101,
+      character: null,
     });
 
     expect(user.creatorName).toBeNull();
@@ -111,6 +115,7 @@ describe('UserEntity', () => {
       createdBy: 101,
       updatedBy: 102,
       deletedBy: null,
+      character: null,
     });
 
     expect(user.id).toBe(1);
@@ -140,6 +145,7 @@ describe('UserEntity', () => {
       deletedBy: null,
       creatorName: 'Creator Name',
       updaterName: 'Updater Name',
+      character: null,
     });
 
     expect(user.creatorName).toBe('Creator Name');
@@ -162,6 +168,7 @@ describe('UserEntity', () => {
       createdBy: 101,
       updatedBy: 102,
       deletedBy: null,
+      character: null,
     });
 
     expect(user.creatorName).toBeNull();
@@ -177,6 +184,7 @@ describe('UserEntity', () => {
         password: 'hashed-password',
         roles: [buildRole(RoleEnum.USER)],
         createdBy: 101,
+        character: null,
       });
 
       const newRoles = [buildRole(RoleEnum.ADMIN)];
@@ -186,6 +194,7 @@ describe('UserEntity', () => {
         email: 'jane.updated@example.com',
         roles: newRoles,
         actorId: 102,
+        character: null,
       });
 
       expect(updated).not.toBe(user);
@@ -208,6 +217,7 @@ describe('UserEntity', () => {
         email: 'new-email@example.com',
         roles: [],
         actorId: 102,
+        character: null,
       });
 
       expect(updated.emailConfirmedAt).toBeNull();
@@ -221,6 +231,7 @@ describe('UserEntity', () => {
         email: user.email,
         roles: [],
         actorId: 102,
+        character: null,
       });
 
       expect(updated.emailConfirmedAt).toBe(user.emailConfirmedAt);
@@ -244,6 +255,7 @@ describe('UserEntity', () => {
         deletedBy: null,
         creatorName: 'Creator Name',
         updaterName: 'Updater Name',
+        character: null,
       });
 
       const updated = user.withProfile({
@@ -251,6 +263,7 @@ describe('UserEntity', () => {
         email: 'jane.updated@example.com',
         roles: [],
         actorId: 102,
+        character: null,
       });
 
       expect(updated.creatorName).toBe('Creator Name');
@@ -267,6 +280,7 @@ describe('UserEntity', () => {
         password: 'hashed-password',
         roles: [buildRole(RoleEnum.USER)],
         createdBy: 101,
+        character: null,
       });
 
       const confirmedAt = new Date('2026-05-01T00:00:00.000Z');
@@ -318,6 +332,7 @@ describe('UserEntity', () => {
         password: 'hashed-password',
         roles: [],
         createdBy: 101,
+        character: null,
       });
 
       const deleted = user.markDeleted(102);
@@ -349,6 +364,7 @@ describe('UserEntity', () => {
         createdBy: 101,
         updatedBy: 101,
         deletedBy: null,
+        character: null,
       });
 
       const deleted = user.markDeleted(102);
@@ -383,6 +399,7 @@ describe('UserEntity', () => {
         deletedBy: null,
         creatorName: 'Creator Name',
         updaterName: 'Updater Name',
+        character: null,
       });
 
       const deleted = user.markDeleted(102);
@@ -414,6 +431,7 @@ describe('UserEntity', () => {
         createdBy: 101,
         updatedBy: 101,
         deletedBy: null,
+        character: null,
       });
 
       const updated = user.withStatus(RecordStatus.INACTIVE, 102);
@@ -452,6 +470,7 @@ describe('UserEntity', () => {
         deletedBy: null,
         creatorName: 'Creator Name',
         updaterName: 'Updater Name',
+        character: null,
       });
 
       const updated = user.withStatus(RecordStatus.INACTIVE, 102);

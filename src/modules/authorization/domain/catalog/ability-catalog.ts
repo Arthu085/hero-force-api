@@ -20,5 +20,5 @@ export const ABILITY_CATALOG: AbilityPair[] = [
 
 export const ROLE_ABILITY_GRANTS: Record<RoleEnum, AbilityPair[]> = {
   [RoleEnum.ADMIN]: ABILITY_CATALOG,
-  [RoleEnum.USER]: [{ action: Action.READ, subject: Subject.USER }],
+  [RoleEnum.USER]: [],
 };

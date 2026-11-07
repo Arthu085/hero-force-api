@@ -113,6 +113,7 @@ describe('UsersManagementController', () => {
       email: 'jane@example.com',
       password: 'plain-password',
       roleUuids: ['role-1'],
+      character: null,
       actorId: 101,
     });
     expect(result).not.toHaveProperty('password');

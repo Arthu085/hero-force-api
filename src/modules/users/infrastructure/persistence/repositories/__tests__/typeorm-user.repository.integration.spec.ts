@@ -82,6 +82,7 @@ describe('TypeOrmUserRepository (integration)', () => {
       password: 'hashed-password',
       roles,
       createdBy: null,
+      character: null,
     });
   }
 
@@ -93,6 +94,7 @@ describe('TypeOrmUserRepository (integration)', () => {
       password: 'hashed-password',
       roles: [],
       createdBy: null,
+      character: null,
     });
   }
 
@@ -371,6 +373,7 @@ describe('TypeOrmUserRepository (integration)', () => {
             email: 'taken@example.com',
             roles: [],
             actorId: null,
+            character: null,
           }),
         ),
       ).rejects.toBeInstanceOf(EmailAlreadyInUseError);
@@ -395,6 +398,7 @@ describe('TypeOrmUserRepository (integration)', () => {
             email: 'contested@example.com',
             roles: [],
             actorId: null,
+            character: null,
           }),
         );
 
@@ -421,6 +425,7 @@ describe('TypeOrmUserRepository (integration)', () => {
         password: 'hashed-password',
         roles: [],
         createdBy: null,
+        character: null,
       });
 
       const error: unknown = await repository
@@ -640,6 +645,7 @@ describe('TypeOrmUserRepository (integration)', () => {
       email: 'jane.updated@example.com',
       roles: [buildRoleEntityStub(roleB)],
       actorId: created.id,
+      character: null,
     });
 
     const result = await repository.update(updated);
@@ -677,6 +683,7 @@ describe('TypeOrmUserRepository (integration)', () => {
       email: created.email,
       roles: [buildRoleEntityStub(roleB)],
       actorId: null,
+      character: null,
     });
 
     const result = await repository.update(updated);
@@ -773,6 +780,7 @@ describe('TypeOrmUserRepository (integration)', () => {
         password: 'hashed-password',
         roles: [],
         createdBy,
+        character: null,
       });
     }
 
@@ -924,6 +932,7 @@ describe('TypeOrmUserRepository (integration)', () => {
           password: 'hashed-password',
           roles: [buildRoleEntityStub(roleRow)],
           createdBy: author.id,
+          character: null,
         }),
       );
     }

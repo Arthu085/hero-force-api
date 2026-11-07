@@ -1,7 +1,9 @@
-import { ApiProperty } from '@nestjs/swagger';
+import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
 import {
   ArrayNotEmpty,
   IsArray,
+  IsEnum,
+  IsOptional,
   IsString,
   IsUUID,
   Matches,
@@ -9,6 +11,7 @@ import {
   MinLength,
 } from 'class-validator';
 import { i18nValidationMessage } from 'nestjs-i18n';
+import { CharacterCode } from '@modules/characters';
 import {
   NON_BLANK_PATTERN,
   PASSWORD_MAX_LENGTH,
@@ -66,4 +69,16 @@ export class CreateUserDto {
     message: i18nValidationMessage('validation.IS_UUID'),
   })
   roleUuids!: string[];
+
+  @ApiPropertyOptional({
+    enum: CharacterCode,
+    nullable: true,
+    description:
+      'Optional superhero character from GET /characters; omitted or null means none.',
+  })
+  @IsOptional()
+  @IsEnum(CharacterCode, {
+    message: i18nValidationMessage('validation.IS_ENUM'),
+  })
+  characterCode?: CharacterCode | null;
 }

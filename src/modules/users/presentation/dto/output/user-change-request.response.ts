@@ -1,5 +1,6 @@
 import { ApiProperty } from '@nestjs/swagger';
 import { RoleListResponseDto } from '@modules/authorization/presentation';
+import { CharacterResponseDto } from '@modules/characters/presentation';
 import { translateOrFallback } from '@shared/presentation/http';
 import type {
   UserChangeRequestEntity,
@@ -17,6 +18,9 @@ export class UserProfileValuesResponseDto {
   @ApiProperty({ type: [RoleListResponseDto] })
   roles!: RoleListResponseDto[];
 
+  @ApiProperty({ type: CharacterResponseDto, nullable: true })
+  character!: CharacterResponseDto | null;
+
   static fromDomain(
     values: UserProfileValues,
     translate: (key: string) => string,
@@ -28,6 +32,9 @@ export class UserProfileValuesResponseDto {
     dto.roles = values.roles.map((role) =>
       RoleListResponseDto.fromDomain(role, translate),
     );
+    dto.character = values.character
+      ? CharacterResponseDto.fromCode(values.character, translate)
+      : null;
 
     return dto;
   }

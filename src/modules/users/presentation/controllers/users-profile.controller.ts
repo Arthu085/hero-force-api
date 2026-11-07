@@ -71,7 +71,7 @@ export class UsersProfileController {
     .tags('users')
     .summary("Update the authenticated user's own profile")
     .description(
-      'Available to every authenticated user, without the UPDATE ability. Only name and email can be changed; any other field is ignored. Omitted fields keep their current values. Changing the email to a different address requires currentPassword and sends a notice, without the new address, to the previous one. Every successful update revokes all of your sessions and clears the auth cookies, so you must log in again; if the email changed, it must be confirmed first. Rate-limited like login.',
+      'Available to every authenticated user, without the UPDATE ability. Only name, email, and characterCode can be changed; any other field is ignored. Omitted fields keep their current values, and characterCode null removes the character. Changing the email to a different address requires currentPassword and sends a notice, without the new address, to the previous one. Every successful update revokes all of your sessions and clears the auth cookies, so you must log in again; if the email changed, it must be confirmed first. Rate-limited like login.',
     )
     .errorResponse(HttpStatus.FORBIDDEN, 'Current password is incorrect.')
     .errorResponse(HttpStatus.CONFLICT, 'Email already in use.')
@@ -92,6 +92,7 @@ export class UsersProfileController {
       actorId: actor.id,
       name: dto.name,
       email: dto.email,
+      character: dto.characterCode,
       currentPassword: dto.currentPassword,
     });
 

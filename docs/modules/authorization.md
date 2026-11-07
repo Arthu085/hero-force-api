@@ -10,8 +10,9 @@ Swagger; this document covers the rules behind them.
 ## Public API
 
 - `index.ts`: `RoleEntity`, `RoleEnum`, `ROLE_REPOSITORY`/`RoleRepository`,
-  `USER_ABILITY_REPOSITORY`/`UserAbilityRepository` (for `GET /users/me/abilities`), and
-  `assertRolesResolved`, consumed by `users`.
+  `USER_ABILITY_REPOSITORY`/`UserAbilityRepository` (for `GET /users/me/abilities`),
+  `assertRolesResolved`, and `RoleNotFoundError`/`InactiveRoleError` (for registration's default
+  role), consumed by `users`.
 - `presentation.ts`: `AbilitiesGuard` (bound globally by `auth`) and `RoleListResponseDto` (embedded
   in `users` responses).
 - `persistence.ts`: `RoleOrmEntity`, `RoleMapper`, and the roles, abilities, and role-abilities
@@ -102,11 +103,16 @@ transaction and throw when a prerequisite is missing. They are idempotent and **
 they insert what is missing and never delete or reset a grant, so runtime changes survive every
 re-seed, including the Compose `api` start.
 
-Default grants (`ROLE_ABILITY_GRANTS`): `ADMIN` gets the full catalog, `USER` only `(READ, USER)`.
+Default grants (`ROLE_ABILITY_GRANTS`): `ADMIN` gets the full catalog and `USER` none, so a
+self-registered account reaches only the self-service routes under `/users/me`, which need no
+ability, and cannot list or read other users.
 
 - **`RolesSeeder` applies a role's defaults only when it creates the role.** Existing roles, including
   ones whose grants were edited or emptied, are left untouched, so a changed default for a non-`ADMIN`
-  role reaches only fresh databases; existing ones are updated through the endpoint.
+  role reaches only fresh databases; existing ones are updated through the endpoint or a data
+  migration. `RevokeReadUserFromUserRole1794068245174` removes the former `USER` default
+  `(READ, USER)` from existing databases; it is a no-op when the grant is absent, and reverting it
+  grants the pair again.
 - **`RoleAbilitiesSeeder` tops up `ADMIN`** with any catalog ability it lacks. Because `ADMIN`'s
   grants cannot change at runtime, this is how a new catalog ability reaches `ADMIN` in an existing
   database.

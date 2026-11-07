@@ -1,5 +1,6 @@
 import { RoleEnum } from '@modules/authorization/domain/enums/role.enum';
 import type { RoleEntity } from '@modules/authorization/domain/entities/role.entity';
+import { CharacterCode } from '@modules/characters';
 import { buildUser } from '@test/support/builders/user.builder';
 import { buildUserChangeRequest } from '@test/support/builders/user-change-request.builder';
 import { UserChangeRequestStatus } from '../../enums/user-change-request-status.enum';
@@ -18,8 +19,18 @@ describe('UserChangeRequestEntity', () => {
       uuid: 'request-1',
       targetUserId: 1,
       requestedBy: 2,
-      current: { name: 'Jane', email: 'jane@example.com', roles: [admin] },
-      requested: { name: 'Janet', email: 'jane@example.com', roles: [admin] },
+      current: {
+        name: 'Jane',
+        email: 'jane@example.com',
+        roles: [admin],
+        character: null,
+      },
+      requested: {
+        name: 'Janet',
+        email: 'jane@example.com',
+        roles: [admin],
+        character: null,
+      },
       expiresAt: new Date(Date.now() + 1000),
     });
 
@@ -46,12 +57,13 @@ describe('UserChangeRequestEntity', () => {
     ).toBe(false);
   });
 
-  it('matches the current profile by name, email and role set, ignoring role order', () => {
+  it('matches the current profile by name, email, character and role set, ignoring role order', () => {
     const request = buildUserChangeRequest({
       current: {
         name: 'Jane',
         email: 'jane@example.com',
         roles: [admin, member],
+        character: CharacterCode.THOR,
       },
     });
 
@@ -59,11 +71,15 @@ describe('UserChangeRequestEntity', () => {
       name: 'Jane',
       email: 'jane@example.com',
       roles: [member, admin],
+      character: CharacterCode.THOR,
     });
 
     expect(request.matchesCurrentProfileOf(user)).toBe(true);
     expect(
       request.matchesCurrentProfileOf(buildUser({ ...user, name: 'Other' })),
+    ).toBe(false);
+    expect(
+      request.matchesCurrentProfileOf(buildUser({ ...user, character: null })),
     ).toBe(false);
     expect(
       request.matchesCurrentProfileOf(

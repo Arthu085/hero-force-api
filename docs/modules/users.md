@@ -4,8 +4,9 @@
 > [security, authentication, and authorization](../conventions.md#security-authentication-and-authorization)
 > · Related: [`auth.md`](auth.md), [`authorization.md`](authorization.md), [`email-outbox.md`](email-outbox.md)
 
-User management (create, list, get, update, activate/deactivate, soft-delete), role assignment
-through the `user_roles` relation, protection of administrators, approval-gated changes between
+Public self-registration, user management (create, list, get, update, activate/deactivate,
+soft-delete), role assignment through the `user_roles` relation, the optional superhero
+[character](#characters), protection of administrators, approval-gated changes between
 administrators, the self-service profile and password change, and email confirmation. Routes and
 payloads are in Swagger; this document covers the rules behind them.
 
@@ -31,8 +32,9 @@ hard delete.
 
 ## Input rules
 
-- **Partial updates.** On `PATCH /users/:uuid`, `name`, `email`, and `roleUuids` are optional; an
-  omitted field keeps its value and an explicit `null` is a `400`. Roles are resolved only when sent
+- **Partial updates.** On `PATCH /users/:uuid`, `name`, `email`, `roleUuids`, and `characterCode` are
+  optional; an omitted field keeps its value and an explicit `null` is a `400`, except that
+  `characterCode: null` removes the character. Roles are resolved only when sent
   and email uniqueness is checked only when the normalized email changes. The [admin safety](#admin-safety)
   rules run on every request. An empty body changes only `updatedAt`/`updatedBy`.
 - **Length limits live in one place.** `src/shared/domain/constraints/user-input-length.constraints.ts`
@@ -55,6 +57,50 @@ hard delete.
   `409`. The database enforces it with `chk_users_email_normalized`, making the partial unique index
   `uq_users_email_active` effectively case-insensitive. A write that loses a race on that index is
   mapped to the same `EmailAlreadyInUseError` (`409`); other unique violations stay `500`s.
+
+## Self-registration
+
+`POST /users/register` is public, CSRF-protected, audited as `User.register`, and uses the stricter
+`AUTH_THROTTLE_*` budget. It takes `name`, `email`, `password`, and an optional `characterCode`, with
+the same validation as `POST /users`.
+
+- **Always `USER`.** The account receives only the live `USER` role, looked up by name. The body has
+  no role or ability fields, and the validation whitelist strips any that are sent. A missing or
+  inactive `USER` role is `RoleNotFoundError`/`InactiveRoleError`, a deployment error rather than a
+  client one.
+- **Same confirmation flow as an admin-created user, except on an outage.** The account starts
+  unconfirmed with `createdBy` null, and an `EMAIL_CONFIRMATION` job is scheduled in the same
+  transaction. Unlike `CreateUserUseCase`, every scheduling denial, `UNAVAILABLE` included, commits
+  the account without a job and logs `Email confirmation not scheduled` with the reason, so the
+  response stays `202` (see [scheduling](#email-confirmation)). Login is refused with `403` until the
+  email is confirmed; a user whose email was never scheduled recovers with
+  `POST /users/resend-confirmation`.
+- **No account enumeration.** Every accepted request answers `202` with no data and the
+  `users.success.registration_received` message. A registered email (including one that wins a race
+  on `uq_users_email_active`) changes nothing and sends nothing. The password is hashed before the
+  lookup, so both paths do the argon2 work.
+- **Residual signals.** The new-account path still does a few more database writes than the
+  registered-email path, a small timing difference that the throttle keeps expensive to sample. An
+  outbox or quota store outage no longer separates the paths, since both answer `202`; only a full
+  database outage fails a request, and it fails both paths alike.
+
+## Characters
+
+A user has at most one superhero character, stored as the nullable `users.character` enum column with
+a code from the [`characters`](characters.md) catalog. Several users may pick the same one.
+
+- **Input.** `characterCode` is optional on `POST /users/register`, `POST /users`, `PATCH /users/:uuid`,
+  `POST /users/:uuid/change-requests`, and `PATCH /users/me`. On create and registration, omitted or
+  `null` means none. On updates, omitted keeps the current character and `null` removes it. A code
+  outside the catalog is a `400` (`validation.IS_ENUM`).
+- **Output.** User list and detail responses, and change request value snapshots, carry `character`
+  as the catalog entry (`code`, `name`, `universe`, `universeLabel`, `group`, `groupLabel`,
+  `avatarPath`) or `null`. Avatar handling stays in the
+  web app, which falls back to the user's initials when there is no character or no avatar.
+- **Abilities.** No new permission: admins use the existing `User` abilities, and every user changes
+  their own character through `PATCH /users/me`, which ends their sessions like any profile change.
+- **Admin change requests** store `current_character` and `requested_character` with the other
+  values, and approval refuses a request whose current character no longer matches.
 
 ## Role assignment
 
@@ -124,11 +170,11 @@ routes refuse a caller who does not hold `ADMIN`, whatever its status, with
 
 ## Self-service profile
 
-`PATCH /users/me` lets every authenticated user change their own `name` and `email`, with no ability
-required. `PATCH /users/:uuid` on one's own uuid still works for users holding `UPDATE` on `User`,
+`PATCH /users/me` lets every authenticated user change their own `name`, `email`, and
+[`characterCode`](#characters), with no ability required. `PATCH /users/:uuid` on one's own uuid still works for users holding `UPDATE` on `User`,
 with the full body and the admin rules.
 
-- **Only `name` and `email`** (plus `currentPassword`). Other fields are stripped by the validation
+- **Only `name`, `email`, and `characterCode`** (plus `currentPassword`). Other fields are stripped by the validation
   whitelist; `null` is a `400`.
 - **An email change needs the current password**, verified against the locked row:
   missing is `CurrentPasswordRequiredError` (`422`), wrong is `InvalidCurrentPasswordError` (`403`,
@@ -184,12 +230,14 @@ request reject an unconfirmed user with `EmailNotConfirmedError` (`403`). `withP
 confirmation **only when the normalized email actually changes**, so renaming a user or changing roles
 never locks them out.
 
-**Scheduling.** `CreateUserUseCase` and every email change schedule an `EMAIL_CONFIRMATION` job inside
-the transaction that writes the user. Scheduling never throws; the caller applies the policy by
-denial reason:
+**Scheduling.** `CreateUserUseCase`, [self-registration](#self-registration), and every email change
+schedule an `EMAIL_CONFIRMATION` job inside the transaction that writes the user. Scheduling runs in
+a savepoint and never throws; the caller applies the policy by denial reason:
 
 - **`UNAVAILABLE`** (outbox or quota store failure): `EmailSchedulingUnavailableError`, and the whole
-  transaction rolls back, so the caller gets a `500` to retry.
+  transaction rolls back, so the caller gets a `500` to retry. Self-registration is the exception:
+  it treats `UNAVAILABLE` like a quota denial, so the outage cannot reveal which emails are
+  registered, and the user resends the confirmation once the outbox recovers.
 - **`DISABLED` or `EXHAUSTED`** (quota denial): the user change commits without a job and
   `Email confirmation not scheduled` is logged. After `EXHAUSTED`, the user can resend once the daily
   quota resets. `DISABLED` (`MAIL_DAILY_LIMIT_EMAIL_CONFIRMATION=0`) also denies resends, so the user
@@ -332,4 +380,8 @@ library defaults; there is no tuning variable.
 - A mistyped new email on `PATCH /users/me` locks the user out until an admin corrects it: login
   requires the new address to be confirmed and the old one is already replaced.
 - A password change sends no notice email, unlike an email change.
-- No self-registration and no hard delete.
+- No hard delete.
+- During a rolling deployment, a release without character support can approve a change request
+  created by this one and silently skip its character change; let pending requests drain or expire.
+- Registering an email that already has an account sends nothing to its owner; someone who forgot
+  they registered sees the usual response and receives no email.

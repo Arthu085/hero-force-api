@@ -82,7 +82,12 @@ export class ApproveUserChangeRequestUseCase {
 
       return this.profileChange.apply(
         user,
-        { name: requested.name, email: requested.email, roles },
+        {
+          name: requested.name,
+          email: requested.email,
+          roles,
+          character: requested.character,
+        },
         user.id,
       );
     });

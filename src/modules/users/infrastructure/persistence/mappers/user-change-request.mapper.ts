@@ -18,6 +18,7 @@ export class UserChangeRequestMapper {
         roles: (orm.currentRoles ?? []).map((role) =>
           RoleMapper.toDomain(role),
         ),
+        character: orm.currentCharacter,
       },
       requested: {
         name: orm.requestedName,
@@ -25,6 +26,7 @@ export class UserChangeRequestMapper {
         roles: (orm.requestedRoles ?? []).map((role) =>
           RoleMapper.toDomain(role),
         ),
+        character: orm.requestedCharacter,
       },
       expiresAt: orm.expiresAt,
       decidedAt: orm.decidedAt,
@@ -44,11 +46,13 @@ export class UserChangeRequestMapper {
     orm.status = domain.status;
     orm.currentName = domain.current.name;
     orm.currentEmail = domain.current.email;
+    orm.currentCharacter = domain.current.character;
     orm.currentRoles = domain.current.roles.map((role) =>
       RoleMapper.toOrm(role),
     );
     orm.requestedName = domain.requested.name;
     orm.requestedEmail = domain.requested.email;
+    orm.requestedCharacter = domain.requested.character;
     orm.requestedRoles = domain.requested.roles.map((role) =>
       RoleMapper.toOrm(role),
     );

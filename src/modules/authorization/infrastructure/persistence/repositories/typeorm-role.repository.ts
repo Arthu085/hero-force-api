@@ -4,6 +4,7 @@ import { In, Repository, type FindOptionsOrder } from 'typeorm';
 import { BaseTransactionalRepository } from '@shared/infrastructure/persistence';
 import type { RoleListSort } from '../../../domain/repositories/role-list-sort';
 import { RoleEntity } from '../../../domain/entities/role.entity';
+import type { RoleEnum } from '../../../domain/enums/role.enum';
 import type { RoleRepository } from '../../../domain/repositories/role.repository';
 import { RoleOrmEntity } from '../entities/role.orm-entity';
 import { RoleMapper } from '../mappers/role.mapper';
@@ -64,6 +65,15 @@ export class TypeOrmRoleRepository
     });
 
     return roles.map((role) => RoleMapper.toDomain(role));
+  }
+
+  async findByName(name: RoleEnum): Promise<RoleEntity | null> {
+    const role = await this.repository.findOne({
+      where: { name },
+      relations: ABILITIES_RELATION,
+    });
+
+    return role ? RoleMapper.toDomain(role) : null;
   }
 
   async update(role: RoleEntity): Promise<RoleEntity> {

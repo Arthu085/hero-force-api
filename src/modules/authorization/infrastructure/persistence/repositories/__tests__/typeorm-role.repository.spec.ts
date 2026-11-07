@@ -107,6 +107,32 @@ describe('TypeOrmRoleRepository', () => {
     expect(result?.uuid).toBe('role-uuid');
   });
 
+  it('findByName looks up one live role by name with its abilities', async () => {
+    const findOne = jest.fn().mockResolvedValue(buildOrmRole());
+
+    const adapter = new TypeOrmRoleRepository(
+      mockOf<Repository<RoleOrmEntity>>({ findOne }),
+    );
+
+    const result = await adapter.findByName(RoleEnum.ADMIN);
+
+    expect(findOne).toHaveBeenCalledWith({
+      where: { name: RoleEnum.ADMIN },
+      relations: { abilities: true },
+    });
+    expect(result).toBeInstanceOf(RoleEntity);
+  });
+
+  it('findByName returns null when no row matches', async () => {
+    const adapter = new TypeOrmRoleRepository(
+      mockOf<Repository<RoleOrmEntity>>({
+        findOne: jest.fn().mockResolvedValue(null),
+      }),
+    );
+
+    await expect(adapter.findByName(RoleEnum.USER)).resolves.toBeNull();
+  });
+
   it('findByUuids short-circuits to [] for an empty input without querying', async () => {
     const find = jest.fn();
     const repository = { find } as unknown as Repository<RoleOrmEntity>;

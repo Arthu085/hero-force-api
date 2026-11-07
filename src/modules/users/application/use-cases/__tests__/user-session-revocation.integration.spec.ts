@@ -165,8 +165,18 @@ describe('User session revocation (integration)', () => {
         uuid: randomUUID(),
         targetUserId: user.id,
         requestedBy: requester.id,
-        current: { name: 'Jane Doe', email: user.email, roles },
-        requested: { name: 'Jane Renamed', email: user.email, roles },
+        current: {
+          name: 'Jane Doe',
+          email: user.email,
+          roles,
+          character: null,
+        },
+        requested: {
+          name: 'Jane Renamed',
+          email: user.email,
+          roles,
+          character: null,
+        },
         expiresAt: new Date(Date.now() + 60_000),
       }),
     );

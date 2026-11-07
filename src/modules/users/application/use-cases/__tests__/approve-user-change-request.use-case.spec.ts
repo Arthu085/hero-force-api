@@ -4,6 +4,7 @@ import type { RoleRepository } from '@modules/authorization/domain/repositories/
 import { InactiveRoleError } from '@modules/authorization/domain/errors/inactive-role.error';
 import { EmailType } from '@shared/domain/enums/email-type.enum';
 import { RecordStatus } from '@shared/domain/enums/record-status.enum';
+import { CharacterCode } from '@modules/characters';
 import { buildUser } from '@test/support/builders/user.builder';
 import { buildUserChangeRequest } from '@test/support/builders/user-change-request.builder';
 import { mockOf } from '@test/support/mocks/mock-of';
@@ -47,11 +48,17 @@ function pendingRequest(
 ): UserChangeRequestEntity {
   return buildUserChangeRequest({
     targetUserId: 7,
-    current: { name: 'Admin', email: 'admin@example.com', roles: [adminRole] },
+    current: {
+      name: 'Admin',
+      email: 'admin@example.com',
+      roles: [adminRole],
+      character: null,
+    },
     requested: {
       name: 'Admin Renamed',
       email: 'admin.new@example.com',
       roles: [adminRole, userRole],
+      character: null,
     },
     ...overrides,
   });
@@ -162,6 +169,7 @@ describe('ApproveUserChangeRequestUseCase', () => {
           name: 'Admin Renamed',
           email: 'admin@example.com',
           roles: [adminRole],
+          character: null,
         },
       }),
     },
@@ -226,6 +234,24 @@ describe('ApproveUserChangeRequestUseCase', () => {
       expect(update).not.toHaveBeenCalled();
     },
   );
+
+  it('applies a requested character', async () => {
+    const { useCase } = buildHarness({
+      request: pendingRequest({
+        requested: {
+          name: 'Admin',
+          email: 'admin@example.com',
+          roles: [adminRole],
+          character: CharacterCode.IRON_MAN,
+        },
+      }),
+      resolvedRoles: [adminRole],
+    });
+
+    const result = await useCase.execute(approve);
+
+    expect(result.character).toBe(CharacterCode.IRON_MAN);
+  });
 
   it('refuses a request whose snapshot no longer matches the profile', async () => {
     const { useCase, update, saveDecision } = buildHarness({

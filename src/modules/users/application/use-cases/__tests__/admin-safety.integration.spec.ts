@@ -143,6 +143,7 @@ describe('admin safety use cases (integration)', () => {
         password: 'hash',
         roles: [role],
         createdBy: null,
+        character: null,
       }),
     );
   }
@@ -160,6 +161,7 @@ describe('admin safety use cases (integration)', () => {
         password: 'password',
         roleUuids: [adminRole.uuid],
         actorId: actor.id,
+        character: null,
       }),
     ).rejects.toThrow(AdminRoleGrantForbiddenError);
     await expect(
@@ -187,6 +189,7 @@ describe('admin safety use cases (integration)', () => {
       password: 'password',
       roleUuids: [adminRole.uuid],
       actorId: actor.id,
+      character: null,
     });
 
     expect(created.roles[0].name).toBe(RoleEnum.ADMIN);

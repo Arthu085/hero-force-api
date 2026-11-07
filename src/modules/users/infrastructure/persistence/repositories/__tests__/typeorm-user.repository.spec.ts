@@ -74,6 +74,7 @@ function buildDomainUser(): UserEntity {
     createdBy: null,
     updatedBy: null,
     deletedBy: null,
+    character: null,
   });
 }
 

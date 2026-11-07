@@ -95,6 +95,7 @@ describe('UserMapper', () => {
       password: 'hashed-password',
       roles: [buildRoleDomain()],
       createdBy: 101,
+      character: null,
     });
 
     const orm = UserMapper.toOrm(domain);
@@ -123,6 +124,7 @@ describe('UserMapper', () => {
       createdBy: null,
       updatedBy: null,
       deletedBy: null,
+      character: null,
     });
 
     const orm = UserMapper.toOrm(domain);
@@ -138,6 +140,7 @@ describe('UserMapper', () => {
       password: 'hashed-password',
       roles: [],
       createdBy: 101,
+      character: null,
     }).markDeleted(102);
 
     const orm = UserMapper.toOrm(deleted);
@@ -267,6 +270,7 @@ describe('UserMapper', () => {
       deletedBy: null,
       creatorName: 'Creator Name',
       updaterName: 'Updater Name',
+      character: null,
     });
 
     const orm = UserMapper.toOrm(domain);
@@ -295,6 +299,7 @@ describe('UserMapper', () => {
       createdBy: null,
       updatedBy: null,
       deletedBy: null,
+      character: null,
     });
 
     const orm = UserMapper.toOrm(domain);
@@ -311,6 +316,7 @@ describe('UserMapper', () => {
         password: 'hashed-password',
         roles: [],
         createdBy: null,
+        character: null,
       }),
     );
 
@@ -358,6 +364,7 @@ describe('UserMapper', () => {
       createdBy: null,
       updatedBy: null,
       deletedBy: null,
+      character: null,
     });
 
     const orm = UserMapper.toOrm(domain);
