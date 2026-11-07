@@ -169,6 +169,7 @@ production image smoke test.
 | [`docs/PROJECT.md`](docs/PROJECT.md)                   | Purpose, modules, responsibilities, and seeded data                            |
 | [`docs/conventions.md`](docs/conventions.md)           | Engineering, architecture, security, testing, and delivery rules               |
 | [`docs/core.md`](docs/core.md)                         | Request pipeline, guards, transactions, scheduling, mail, and logging          |
+| [`docs/deployment.md`](docs/deployment.md)             | First production demo, HTTPS, services, administrator, backups, and updates    |
 | [`docs/infrastructure.md`](docs/infrastructure.md)     | Environment, Docker, migrations, deployment, operations, and CI                |
 | [`docs/modules/projects.md`](docs/modules/projects.md) | Projects, six goals, derived progress, dashboard statistics, and visibility    |
 | [`docs/modules/`](docs/modules)                        | Authentication, users, characters, authorization, auditing, and email services |
