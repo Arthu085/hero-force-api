@@ -276,6 +276,36 @@ describe('Projects (e2e)', () => {
     await admin.get('/api/projects?sortBy=password').expect(400);
   });
 
+  it('searches by name case-insensitively, sorts, and paginates', async () => {
+    const token = `Paged${Date.now()}`;
+
+    for (const suffix of ['Alpha', 'Charlie', 'Bravo']) {
+      await createProject(`${token} ${suffix}`, heroUuid);
+    }
+
+    const query = `name=${token.toLowerCase()}&sortBy=name&sortOrder=DESC&limit=2`;
+    const firstPage = await admin.get(`/api/projects?${query}`).expect(200);
+
+    const secondPage = await admin
+      .get(`/api/projects?${query}&page=2`)
+      .expect(200);
+
+    const firstBody = firstPage.body as EnvelopeBody<ProjectShape[]>;
+    const secondBody = secondPage.body as EnvelopeBody<ProjectShape[]>;
+
+    expect(firstBody.meta.total).toBe(3);
+    expect(firstBody.data.map((item) => item.name)).toEqual([
+      `${token} Charlie`,
+      `${token} Bravo`,
+    ]);
+    expect(secondBody.data.map((item) => item.name)).toEqual([
+      `${token} Alpha`,
+    ]);
+
+    await admin.get('/api/projects?limit=51').expect(400);
+    await admin.get('/api/projects?page=0').expect(400);
+  });
+
   it('lists eligible heroes without the administrator', async () => {
     const response = await admin
       .get('/api/projects/heroes?limit=50')
