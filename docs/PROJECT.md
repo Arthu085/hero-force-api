@@ -6,9 +6,10 @@ What this API does, which modules it has, and the data it seeds. Engineering rul
 
 ## Purpose
 
-A REST API for a web frontend that provides authentication with cookie-based sessions, user and
-role management with administrator safeguards, ability-based authorization, request auditing, and
-transactional email delivery (email confirmation, password reset, and account notifications).
+The Hero Force REST API. It provides the Hero Force web client with authentication through
+cookie-based sessions, user and role management with administrator safeguards, ability-based
+authorization, request auditing, and transactional email delivery (email confirmation, password
+reset, and account notifications).
 
 ## Stack
 

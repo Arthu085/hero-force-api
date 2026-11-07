@@ -1,4 +1,4 @@
-# API
+# Hero Force API
 
 NestJS 11 REST API: TypeScript, TypeORM, PostgreSQL, JWT cookies, nestjs-i18n, Jest, npm.
 
