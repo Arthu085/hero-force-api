@@ -34,9 +34,9 @@ schedule ──► PENDING ──claim──► PROCESSING ──handler ok─�
   rolls back only the slot and job and leaves the caller's transaction usable.
 - **It never throws.** It returns `{ scheduled: true }` after a successful insert, or
   `{ scheduled: false, reason: 'DISABLED' | 'EXHAUSTED' | 'UNAVAILABLE' }`, logged with a masked
-  recipient. The caller owns the policy: public routes ignore the result; user writes roll back on
-  `UNAVAILABLE` and commit without the email on a quota denial
-  ([`users.md`](users.md#email-confirmation)).
+  recipient. The caller owns the policy: public routes ignore the result and self-registration only
+  logs a denial; other user writes roll back on `UNAVAILABLE` and commit without the email on a quota
+  denial ([`users.md`](users.md#email-confirmation)).
 
 A job stores only `email_type`, the normalized `recipient`, and the request `locale` (an unsupported
 language falls back to the default), because the worker runs outside any request. **It never stores a

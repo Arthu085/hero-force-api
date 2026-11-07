@@ -14,5 +14,10 @@
     "dc": "DC",
     "dark_horse": "Dark Horse",
     "image": "Image"
+  },
+  "character_group": {
+    "marvel": "Marvel",
+    "dc": "DC",
+    "others": "Outros"
   }
 }

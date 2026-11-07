@@ -18,7 +18,7 @@ export class UserRegistrationController {
     .tags('users')
     .summary('Register a new account')
     .description(
-      'Public self-registration. The account always receives the USER role; roles and abilities are never read from the body. The new account must confirm its email before it can log in. An email that is already registered gets the same response, without creating or changing anything, so the route does not reveal which emails have accounts. Rate-limited like login.',
+      'Public self-registration. The account always receives the USER role; roles and abilities are never read from the body. The new account must confirm its email before it can log in. An email that is already registered gets the same response, without creating or changing anything, so the route does not reveal which emails have accounts. If the confirmation email cannot be scheduled, the account is still created and the client can request it again through POST /users/resend-confirmation. Rate-limited like login.',
     )
     .body(RegisterUserDto)
     .build())

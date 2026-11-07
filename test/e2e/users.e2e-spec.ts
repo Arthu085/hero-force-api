@@ -528,7 +528,7 @@ describe('Users (e2e)', () => {
       expect(body.meta.message).toBe(PT_BR.ok);
     });
 
-    it("returns only the USER role's grant for a non-admin user, without requiring any ability", async () => {
+    it('returns no abilities for a USER-role user, without requiring any ability', async () => {
       const userAgent = await createAuthAgent(app, USER_CREDENTIALS);
 
       const response = await userAgent
@@ -537,7 +537,7 @@ describe('Users (e2e)', () => {
 
       const body = response.body as EnvelopeBody<AbilityPairShape[]>;
 
-      expect(body.data).toEqual([{ action: 'READ', subject: 'USER' }]);
+      expect(body.data).toEqual([]);
     });
 
     it('rejects an unauthenticated request with a 401', async () => {

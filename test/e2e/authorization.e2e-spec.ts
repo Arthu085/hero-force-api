@@ -203,16 +203,12 @@ describe('Authorization (Roles + Abilities) (e2e)', () => {
     expect(body.meta.message).toBe(PT_BR.ok);
   });
 
-  it('gets each seeded role by uuid with its full grant set (ADMIN: full catalog, USER: one pair)', async () => {
+  it('gets each seeded role by uuid with its full grant set (ADMIN: full catalog, USER: none)', async () => {
     const admin = await getRoleDetailByName('ADMIN');
     const user = await getRoleDetailByName('USER');
 
     expect(admin.abilities).toHaveLength(ABILITY_CATALOG.length);
-    expect(user.abilities).toHaveLength(1);
-    expect(user.abilities[0]).toMatchObject({
-      action: Action.READ,
-      subject: 'USER',
-    });
+    expect(user.abilities).toEqual([]);
   });
 
   it('gets a single role by uuid', async () => {
@@ -300,23 +296,17 @@ describe('Authorization (Roles + Abilities) (e2e)', () => {
   it('replaces a role’s ability grants (idempotent no-op against its seeded baseline)', async () => {
     const user = await getRoleByName('USER');
 
-    // Seeded baseline: USER gets exactly READ + User. Sent explicitly rather
-    // than derived from the live read, which would round-trip a drifted grant
-    // set as a passing no-op.
-    const seededPairs = [{ action: Action.READ, subject: 'USER' }];
-
+    // Seeded baseline: USER gets no abilities. Sent explicitly rather than
+    // derived from the live read, which would round-trip a drifted grant set
+    // as a passing no-op.
     const response = await agent
       .patch(`/api/roles/${user.uuid}/abilities`)
-      .send({ abilities: seededPairs })
+      .send({ abilities: [] })
       .expect(200);
 
     const body = response.body as EnvelopeBody<RoleDetailShape>;
 
-    expect(body.data.abilities).toHaveLength(1);
-    expect(body.data.abilities[0]).toMatchObject({
-      action: Action.READ,
-      subject: 'USER',
-    });
+    expect(body.data.abilities).toEqual([]);
     expect(body.meta.message).toBe(PT_BR.updated);
   });
 

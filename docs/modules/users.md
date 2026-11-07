@@ -68,19 +68,21 @@ the same validation as `POST /users`.
   no role or ability fields, and the validation whitelist strips any that are sent. A missing or
   inactive `USER` role is `RoleNotFoundError`/`InactiveRoleError`, a deployment error rather than a
   client one.
-- **Same confirmation flow as an admin-created user.** The account starts unconfirmed with
-  `createdBy` null, and an `EMAIL_CONFIRMATION` job is scheduled in the same transaction with the
-  [scheduling policy](#email-confirmation) of `CreateUserUseCase`. Login is refused until the email is
-  confirmed.
+- **Same confirmation flow as an admin-created user, except on an outage.** The account starts
+  unconfirmed with `createdBy` null, and an `EMAIL_CONFIRMATION` job is scheduled in the same
+  transaction. Unlike `CreateUserUseCase`, every scheduling denial, `UNAVAILABLE` included, commits
+  the account without a job and logs `Email confirmation not scheduled` with the reason, so the
+  response stays `202` (see [scheduling](#email-confirmation)). Login is refused with `403` until the
+  email is confirmed; a user whose email was never scheduled recovers with
+  `POST /users/resend-confirmation`.
 - **No account enumeration.** Every accepted request answers `202` with no data and the
   `users.success.registration_received` message. A registered email (including one that wins a race
   on `uq_users_email_active`) changes nothing and sends nothing. The password is hashed before the
   lookup, so both paths do the argon2 work.
 - **Residual signals.** The new-account path still does a few more database writes than the
-  registered-email path, a small timing difference that the throttle keeps expensive to sample.
-  While the outbox is unavailable, only the new-account path fails with a `500` (the account is
-  rolled back rather than left without a confirmation email), so an outage reveals which emails are
-  registered.
+  registered-email path, a small timing difference that the throttle keeps expensive to sample. An
+  outbox or quota store outage no longer separates the paths, since both answer `202`; only a full
+  database outage fails a request, and it fails both paths alike.
 
 ## Characters
 
@@ -91,8 +93,9 @@ a code from the [`characters`](characters.md) catalog. Several users may pick th
   `POST /users/:uuid/change-requests`, and `PATCH /users/me`. On create and registration, omitted or
   `null` means none. On updates, omitted keeps the current character and `null` removes it. A code
   outside the catalog is a `400` (`validation.IS_ENUM`).
-- **Output.** User list and detail responses carry `character` as the catalog entry
-  (`code`, `name`, `universe`, `universeLabel`, `avatarPath`) or `null`. Avatar handling stays in the
+- **Output.** User list and detail responses, and change request value snapshots, carry `character`
+  as the catalog entry (`code`, `name`, `universe`, `universeLabel`, `group`, `groupLabel`,
+  `avatarPath`) or `null`. Avatar handling stays in the
   web app, which falls back to the user's initials when there is no character or no avatar.
 - **Abilities.** No new permission: admins use the existing `User` abilities, and every user changes
   their own character through `PATCH /users/me`, which ends their sessions like any profile change.
@@ -227,12 +230,14 @@ request reject an unconfirmed user with `EmailNotConfirmedError` (`403`). `withP
 confirmation **only when the normalized email actually changes**, so renaming a user or changing roles
 never locks them out.
 
-**Scheduling.** `CreateUserUseCase` and every email change schedule an `EMAIL_CONFIRMATION` job inside
-the transaction that writes the user. Scheduling never throws; the caller applies the policy by
-denial reason:
+**Scheduling.** `CreateUserUseCase`, [self-registration](#self-registration), and every email change
+schedule an `EMAIL_CONFIRMATION` job inside the transaction that writes the user. Scheduling runs in
+a savepoint and never throws; the caller applies the policy by denial reason:
 
 - **`UNAVAILABLE`** (outbox or quota store failure): `EmailSchedulingUnavailableError`, and the whole
-  transaction rolls back, so the caller gets a `500` to retry.
+  transaction rolls back, so the caller gets a `500` to retry. Self-registration is the exception:
+  it treats `UNAVAILABLE` like a quota denial, so the outage cannot reveal which emails are
+  registered, and the user resends the confirmation once the outbox recovers.
 - **`DISABLED` or `EXHAUSTED`** (quota denial): the user change commits without a job and
   `Email confirmation not scheduled` is logged. After `EXHAUSTED`, the user can resend once the daily
   quota resets. `DISABLED` (`MAIL_DAILY_LIMIT_EMAIL_CONFIRMATION=0`) also denies resends, so the user

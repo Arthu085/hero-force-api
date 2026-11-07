@@ -14,7 +14,6 @@ import { assertRecordActive } from '@shared/domain/policies';
 import { normalizeEmail } from '@shared/application/filters';
 import {
   EMAIL_OUTBOX_PORT,
-  EmailSchedulingUnavailableError,
   TRANSACTION_MANAGER,
   type EmailOutboxPort,
   type ScheduleEmailResult,
@@ -116,10 +115,6 @@ export class RegisterUserUseCase {
       emailType: EmailType.EMAIL_CONFIRMATION,
       recipient: created.email,
     });
-
-    if (!confirmation.scheduled && confirmation.reason === 'UNAVAILABLE') {
-      throw new EmailSchedulingUnavailableError();
-    }
 
     return { created, confirmation };
   }

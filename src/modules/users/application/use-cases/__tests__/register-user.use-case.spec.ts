@@ -5,7 +5,6 @@ import { InactiveRoleError } from '@modules/authorization/domain/errors/inactive
 import { RoleNotFoundError } from '@modules/authorization/domain/errors/role-not-found.error';
 import type { RoleRepository } from '@modules/authorization/domain/repositories/role.repository';
 import { CharacterCode } from '@modules/characters';
-import { EmailSchedulingUnavailableError } from '@shared/application/ports';
 import { EmailType } from '@shared/domain/enums/email-type.enum';
 import { RecordStatus } from '@shared/domain/enums/record-status.enum';
 import { buildUser } from '@test/support/builders/user.builder';
@@ -154,37 +153,26 @@ describe('RegisterUserUseCase', () => {
     },
   );
 
-  it('rolls back when the outbox is unavailable', async () => {
-    const { useCase } = buildHarness({
-      schedule: jest
-        .fn()
-        .mockResolvedValue({ scheduled: false, reason: 'UNAVAILABLE' }),
-    });
+  it.each(['UNAVAILABLE', 'EXHAUSTED', 'DISABLED'] as const)(
+    'commits and logs a warning when the confirmation email is not scheduled (%s)',
+    async (reason) => {
+      const warn = jest
+        .spyOn(Logger.prototype, 'warn')
+        .mockImplementation(() => undefined);
 
-    await expect(useCase.execute(input)).rejects.toThrow(
-      EmailSchedulingUnavailableError,
-    );
-  });
+      const { useCase, create } = buildHarness({
+        schedule: jest.fn().mockResolvedValue({ scheduled: false, reason }),
+      });
 
-  it('commits and logs a warning when the quota denies the confirmation email', async () => {
-    const warn = jest
-      .spyOn(Logger.prototype, 'warn')
-      .mockImplementation(() => undefined);
+      await expect(useCase.execute(input)).resolves.toBeUndefined();
 
-    const { useCase, create } = buildHarness({
-      schedule: jest
-        .fn()
-        .mockResolvedValue({ scheduled: false, reason: 'EXHAUSTED' }),
-    });
-
-    await useCase.execute(input);
-
-    expect(create).toHaveBeenCalledTimes(1);
-    expect(warn).toHaveBeenCalledWith(
-      expect.objectContaining({
-        msg: 'Email confirmation not scheduled',
-        reason: 'EXHAUSTED',
-      }),
-    );
-  });
+      expect(create).toHaveBeenCalledTimes(1);
+      expect(warn).toHaveBeenCalledWith(
+        expect.objectContaining({
+          msg: 'Email confirmation not scheduled',
+          reason,
+        }),
+      );
+    },
+  );
 });

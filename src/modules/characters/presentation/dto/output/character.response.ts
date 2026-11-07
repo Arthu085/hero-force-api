@@ -5,6 +5,7 @@ import {
   type CharacterDefinition,
 } from '../../../domain/catalog/character-catalog';
 import { CharacterCode } from '../../../domain/enums/character-code.enum';
+import { CharacterGroup } from '../../../domain/enums/character-group.enum';
 import { CharacterUniverse } from '../../../domain/enums/character-universe.enum';
 
 export class CharacterResponseDto {
@@ -19,6 +20,16 @@ export class CharacterResponseDto {
 
   @ApiProperty()
   universeLabel!: string;
+
+  @ApiProperty({
+    enum: CharacterGroup,
+    description:
+      'Selector group of the character: Marvel, DC, or every other universe.',
+  })
+  group!: CharacterGroup;
+
+  @ApiProperty()
+  groupLabel!: string;
 
   @ApiProperty({
     type: String,
@@ -42,6 +53,12 @@ export class CharacterResponseDto {
       translate,
       `enums.character_universe.${character.universe.toLowerCase()}`,
       character.universe,
+    );
+    dto.group = character.group;
+    dto.groupLabel = translateOrFallback(
+      translate,
+      `enums.character_group.${character.group.toLowerCase()}`,
+      character.group,
     );
     dto.avatarPath = character.avatarPath;
 

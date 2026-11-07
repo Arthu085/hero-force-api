@@ -30,9 +30,7 @@ describe('ability-catalog', () => {
     );
   });
 
-  it('grants USER exactly READ on Subject.USER', () => {
-    expect(ROLE_ABILITY_GRANTS[RoleEnum.USER]).toEqual([
-      { action: Action.READ, subject: Subject.USER },
-    ]);
+  it('grants USER no abilities', () => {
+    expect(ROLE_ABILITY_GRANTS[RoleEnum.USER]).toEqual([]);
   });
 });

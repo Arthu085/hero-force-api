@@ -5,6 +5,11 @@ import request from 'supertest';
 import { App } from 'supertest/types';
 import { DataSource } from 'typeorm';
 import {
+  EMAIL_QUOTA_PORT,
+  type EmailQuotaPort,
+} from '@shared/application/ports';
+import { EmailType } from '@shared/domain/enums/email-type.enum';
+import {
   USER_NOTIFIER,
   type UserNotifier,
 } from '@modules/users/application/ports/user-notifier.port';
@@ -29,6 +34,8 @@ interface CharacterShape {
   name: string;
   universe: string;
   universeLabel: string;
+  group: string;
+  groupLabel: string;
   avatarPath: string | null;
 }
 
@@ -95,12 +102,28 @@ describe('Public registration and characters (e2e)', () => {
     sendUserChangeRequest: () => Promise.resolve(),
   };
 
+  // Stands in for the per-day quota so a test can make confirmation scheduling
+  // fail the way an outbox or quota store outage does.
+  const outage = { confirmationUnavailable: false };
+
+  const emailQuota: EmailQuotaPort = {
+    tryConsume: ({ emailType }) =>
+      emailType === EmailType.EMAIL_CONFIRMATION &&
+      outage.confirmationUnavailable
+        ? Promise.reject(new Error('Simulated quota store outage'))
+        : Promise.resolve({ allowed: true, used: 1, limit: 5 }),
+  };
+
   beforeAll(async () => {
     process.env.AUTH_THROTTLE_LIMIT = '1000';
 
     app = await createTestApp({
       override: (builder) =>
-        builder.overrideProvider(USER_NOTIFIER).useValue(notifier),
+        builder
+          .overrideProvider(USER_NOTIFIER)
+          .useValue(notifier)
+          .overrideProvider(EMAIL_QUOTA_PORT)
+          .useValue(emailQuota),
     });
 
     admin = await createAuthAgent(app);
@@ -163,14 +186,47 @@ describe('Public registration and characters (e2e)', () => {
     return rows.map((row) => row.name);
   }
 
+  async function queuedConfirmations(email: string): Promise<number> {
+    const rows = await dataSource.query<Array<{ count: string }>>(
+      `SELECT count(*) AS count
+       FROM email_outbox
+       WHERE recipient = $1 AND email_type = 'EMAIL_CONFIRMATION'`,
+      [email],
+    );
+
+    return Number(rows[0].count);
+  }
+
+  async function registerConfirmedUser(): Promise<Credentials> {
+    const credentials: Credentials = {
+      email: `register-access-${randomUUID()}@example.com`,
+      password: PASSWORD,
+    };
+
+    const response = await register({
+      name: 'Self Registered',
+      ...credentials,
+    });
+
+    expect(response.status).toBe(202);
+
+    await confirm(credentials.email);
+
+    return credentials;
+  }
+
   describe('GET /api/characters', () => {
-    it('lists the 12-character catalog without authentication, with localized universes', async () => {
+    async function listCharacters(lang: string): Promise<CharacterShape[]> {
       const response = await request(app.getHttpServer())
         .get('/api/characters')
-        .set('x-lang', 'pt-BR')
+        .set('x-lang', lang)
         .expect(200);
 
-      const characters = (response.body as EnvelopeBody<CharacterShape[]>).data;
+      return (response.body as EnvelopeBody<CharacterShape[]>).data;
+    }
+
+    it('lists the 12-character catalog without authentication, with localized universes and groups', async () => {
+      const characters = await listCharacters('pt-BR');
 
       expect(characters).toHaveLength(12);
       expect(characters).toContainEqual({
@@ -178,11 +234,43 @@ describe('Public registration and characters (e2e)', () => {
         name: 'Spider-Man',
         universe: 'MARVEL',
         universeLabel: 'Marvel',
+        group: 'MARVEL',
+        groupLabel: 'Marvel',
         avatarPath: '/characters/spider-man.svg',
+      });
+      expect(characters).toContainEqual({
+        code: 'HELLBOY',
+        name: 'Hellboy',
+        universe: 'DARK_HORSE',
+        universeLabel: 'Dark Horse',
+        group: 'OTHERS',
+        groupLabel: 'Outros',
+        avatarPath: '/characters/hellboy.svg',
       });
       expect(
         new Set(characters.map((character) => character.universe)),
       ).toEqual(new Set(['MARVEL', 'DC', 'DARK_HORSE', 'IMAGE']));
+      expect(characters.every((character) => character.avatarPath)).toBe(true);
+    });
+
+    it('groups the catalog into Marvel, DC, and Others', async () => {
+      const characters = await listCharacters('en');
+
+      const others = characters
+        .filter((character) => character.group === 'OTHERS')
+        .map((character) => character.code);
+
+      expect(new Set(characters.map((character) => character.group))).toEqual(
+        new Set(['MARVEL', 'DC', 'OTHERS']),
+      );
+      expect(others).toEqual(['HELLBOY', 'SPAWN', 'INVINCIBLE']);
+      expect(
+        characters.find((character) => character.code === 'SPAWN'),
+      ).toMatchObject({
+        universe: 'IMAGE',
+        universeLabel: 'Image',
+        groupLabel: 'Others',
+      });
     });
   });
 
@@ -276,6 +364,50 @@ describe('Public registration and characters (e2e)', () => {
       expect(me.character).toBeNull();
     });
 
+    it('keeps the account and answers 202 when the confirmation email cannot be scheduled, recoverable through resend', async () => {
+      const email = `register-outage-${randomUUID()}@example.com`;
+
+      const reference = await register({
+        name: 'Reference',
+        email: `register-reference-${randomUUID()}@example.com`,
+        password: PASSWORD,
+      });
+
+      outage.confirmationUnavailable = true;
+
+      let response: request.Response;
+
+      try {
+        response = await register({
+          name: 'Outage',
+          email,
+          password: PASSWORD,
+        });
+      } finally {
+        outage.confirmationUnavailable = false;
+      }
+
+      expect(response.status).toBe(202);
+      expect(response.body).toEqual(reference.body);
+      await expect(storedRoleNames(email)).resolves.toEqual(['USER']);
+      await expect(queuedConfirmations(email)).resolves.toBe(0);
+
+      const blocked = await login({ email, password: PASSWORD });
+      expect(blocked.status).toBe(403);
+
+      const resend = await (await anonymousClient(app))
+        .post('/api/users/resend-confirmation')
+        .send({ email });
+
+      expect(resend.status).toBe(200);
+      await expect(queuedConfirmations(email)).resolves.toBe(1);
+
+      await confirm(email);
+
+      const signedIn = await login({ email, password: PASSWORD });
+      expect(signedIn.status).toBe(200);
+    });
+
     it('applies the password strength rule and rejects an unknown character', async () => {
       const response = await register({
         name: 'Weak',
@@ -285,6 +417,54 @@ describe('Public registration and characters (e2e)', () => {
       });
 
       expect(response.status).toBe(400);
+    });
+  });
+
+  describe('USER role access', () => {
+    it('denies a self-registered user the user directory but keeps self-service routes', async () => {
+      const credentials = await registerConfirmedUser();
+      const agent = await createAuthAgent(app, credentials);
+
+      const me = (
+        (await agent.get('/api/users/me').expect(200))
+          .body as EnvelopeBody<UserShape>
+      ).data;
+
+      const listing = await agent.get('/api/users').expect(403);
+      expect(listing.body).toMatchObject({
+        requiredAbilities: [
+          expect.objectContaining({ action: 'READ', subject: 'USER' }),
+        ],
+      });
+
+      await agent.get(`/api/users/${me.uuid}`).expect(403);
+
+      const other = await createIsolatedUser(app);
+      const otherAgent = await createAuthAgent(app, other);
+
+      const otherMe = (
+        (await otherAgent.get('/api/users/me').expect(200))
+          .body as EnvelopeBody<UserShape>
+      ).data;
+
+      await agent.get(`/api/users/${otherMe.uuid}`).expect(403);
+
+      await expect(
+        agent.get('/api/users/me/abilities').expect(200),
+      ).resolves.toMatchObject({ body: { data: [] } });
+
+      const renamed = await agent
+        .patch('/api/users/me')
+        .send({ name: 'Renamed Hero', characterCode: 'SPAWN' })
+        .expect(200);
+
+      expect((renamed.body as EnvelopeBody<UserShape>).data).toMatchObject({
+        name: 'Renamed Hero',
+        character: expect.objectContaining({
+          code: 'SPAWN',
+          group: 'OTHERS',
+        }) as unknown,
+      });
     });
   });
 
@@ -336,9 +516,14 @@ describe('Public registration and characters (e2e)', () => {
         ).body as EnvelopeBody<UserShape>
       ).data;
 
-      expect(created.character).toMatchObject({
+      expect(created.character).toEqual({
         code: 'HELLBOY',
-        avatarPath: null,
+        name: 'Hellboy',
+        universe: 'DARK_HORSE',
+        universeLabel: 'Dark Horse',
+        group: 'OTHERS',
+        groupLabel: 'Outros',
+        avatarPath: '/characters/hellboy.svg',
       });
 
       const listed = (

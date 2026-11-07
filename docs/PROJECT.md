@@ -42,7 +42,8 @@ administrator or by the seed.
 `npm run seed` (and `seed:prod`) provisions:
 
 - the roles `ADMIN` and `USER`;
-- the full ability catalog, with `ADMIN` granted every ability and `USER` only `(READ, USER)`;
+- the full ability catalog, with `ADMIN` granted every ability and `USER` none (self-service routes
+  under `/users/me` need no ability);
 - one confirmed administrator from `SEED_ADMIN_EMAIL` / `SEED_ADMIN_PASSWORD`, skipped in production
   unless `SEED_ADMIN_ENABLED=true`.
 

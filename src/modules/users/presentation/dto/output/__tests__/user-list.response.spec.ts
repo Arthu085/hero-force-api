@@ -112,9 +112,13 @@ describe('UserListResponseDto.fromDomain', () => {
       (key: string) => key,
     );
 
-    expect(dto.character).toMatchObject({
+    expect(dto.character).toEqual({
       code: CharacterCode.BLACK_PANTHER,
       name: 'Black Panther',
+      universe: 'MARVEL',
+      universeLabel: 'MARVEL',
+      group: 'MARVEL',
+      groupLabel: 'MARVEL',
       avatarPath: '/characters/black-panther.svg',
     });
   });
