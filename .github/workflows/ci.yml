@@ -1,0 +1,143 @@
+name: CI
+
+on:
+  pull_request:
+    branches: [main]
+  push:
+    branches: [main]
+
+# Pull requests share one group per PR ref, so a new commit cancels the outdated run.
+# Each push to main gets its own group (run id), so no push replaces another pending one.
+concurrency:
+  group: ci-${{ github.event_name == 'pull_request' && github.ref || github.run_id }}
+  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
+
+permissions:
+  contents: read
+
+jobs:
+  ci:
+    name: Lint, typecheck, test and build
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version-file: .nvmrc
+          cache: npm
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Lint
+        run: npm run lint:check
+
+      - name: Typecheck
+        run: npm run typecheck
+
+      - name: Unit tests (with coverage threshold)
+        run: npm run test:cov
+
+      # Testcontainers provisions its own ephemeral Postgres for both suites;
+      # the runner's Docker daemon is the only requirement.
+      - name: Integration tests
+        run: npm run test:integration
+
+      - name: E2E tests
+        run: npm run test:e2e
+
+      - name: Build
+        run: npm run build
+
+  production-image:
+    name: Production image smoke test
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: docker/setup-buildx-action@v3
+
+      # Built and loaded into the runner's Docker daemon only; nothing is pushed.
+      - name: Build prod target
+        uses: docker/build-push-action@v6
+        with:
+          context: .
+          target: prod
+          tags: api:ci-${{ github.sha }}
+          load: true
+          push: false
+          cache-from: type=gha,scope=prod
+          cache-to: type=gha,scope=prod,mode=max
+
+      # Disposable PostgreSQL and Mailpit, secrets generated per run.
+      - name: Smoke test
+        run: scripts/smoke-test-prod-image.sh api:ci-${{ github.sha }}
+
+  frontend-integration:
+    name: Frontend API integration tests
+    runs-on: ubuntu-latest
+    env:
+      FRONTEND_REPOSITORY: ${{ vars.FRONTEND_REPOSITORY || format('{0}/frontend-template', github.repository_owner) }}
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          path: backend
+          persist-credentials: false
+
+      # A coordinated contract change uses one branch name in both repositories;
+      # otherwise the suite runs against the other repository's main.
+      # The token stays in this step and the next checkout, so dependency install and test code never receive it.
+      - name: Resolve frontend ref
+        id: frontend-ref
+        env:
+          BRANCH: ${{ github.head_ref || github.ref_name }}
+          GH_TOKEN: ${{ secrets.CROSS_REPO_TOKEN || github.token }}
+          GIT_TERMINAL_PROMPT: '0'
+        run: |
+          status=0
+          git -c credential.helper= -c 'credential.helper=!gh auth git-credential' \
+            ls-remote --exit-code --heads "https://github.com/$FRONTEND_REPOSITORY" "refs/heads/$BRANCH" > /dev/null || status=$?
+
+          case "$status" in
+            0) ref="$BRANCH" ;;
+            2) ref=main ;;
+            *)
+              echo "::error::Cannot read $FRONTEND_REPOSITORY. A private repository requires the CROSS_REPO_TOKEN Actions secret with Contents read access; see docs/infrastructure.md#ci."
+              exit 1
+              ;;
+          esac
+
+          echo "ref=$ref" >> "$GITHUB_OUTPUT"
+
+      - uses: actions/checkout@v4
+        with:
+          repository: ${{ env.FRONTEND_REPOSITORY }}
+          ref: ${{ steps.frontend-ref.outputs.ref }}
+          path: frontend
+          token: ${{ secrets.CROSS_REPO_TOKEN || github.token }}
+          persist-credentials: false
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version-file: backend/.nvmrc
+          cache: npm
+          cache-dependency-path: |
+            backend/package-lock.json
+            frontend/package-lock.json
+
+      - name: Install API dependencies
+        run: npm ci
+        working-directory: backend
+
+      - name: Install frontend dependencies
+        run: npm ci
+        working-directory: frontend
+
+      # Testcontainers provisions the API's ephemeral Postgres; the runner's Docker
+      # daemon is the only requirement.
+      - name: Run API integration tests
+        run: npm run test:integration
+        working-directory: frontend
+        env:
+          BACKEND_TEMPLATE_PATH: ../backend
