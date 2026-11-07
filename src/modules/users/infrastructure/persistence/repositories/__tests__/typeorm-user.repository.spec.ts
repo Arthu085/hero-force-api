@@ -60,7 +60,6 @@ function buildUniqueViolation(constraint: string): QueryFailedError {
 
 function buildDomainUser(): UserEntity {
   return UserEntity.reconstitute({
-    character: null,
     id: 1,
     uuid: 'user-uuid',
     status: RecordStatus.ACTIVE,
@@ -75,6 +74,7 @@ function buildDomainUser(): UserEntity {
     createdBy: null,
     updatedBy: null,
     deletedBy: null,
+    character: null,
   });
 }
 

@@ -76,6 +76,11 @@ the same validation as `POST /users`.
   `users.success.registration_received` message. A registered email (including one that wins a race
   on `uq_users_email_active`) changes nothing and sends nothing. The password is hashed before the
   lookup, so both paths do the argon2 work.
+- **Residual signals.** The new-account path still does a few more database writes than the
+  registered-email path, a small timing difference that the throttle keeps expensive to sample.
+  While the outbox is unavailable, only the new-account path fails with a `500` (the account is
+  rolled back rather than left without a confirmation email), so an outage reveals which emails are
+  registered.
 
 ## Characters
 
@@ -371,5 +376,7 @@ library defaults; there is no tuning variable.
   requires the new address to be confirmed and the old one is already replaced.
 - A password change sends no notice email, unlike an email change.
 - No hard delete.
+- During a rolling deployment, a release without character support can approve a change request
+  created by this one and silently skip its character change; let pending requests drain or expire.
 - Registering an email that already has an account sends nothing to its owner; someone who forgot
   they registered sees the usual response and receives no email.

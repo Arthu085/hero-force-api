@@ -137,13 +137,13 @@ describe('admin safety use cases (integration)', () => {
   async function addUser(email: string, role: RoleEntity): Promise<UserEntity> {
     return users.create(
       UserEntity.create({
-        character: null,
         uuid: randomUUID(),
         name: email,
         email,
         password: 'hash',
         roles: [role],
         createdBy: null,
+        character: null,
       }),
     );
   }
@@ -156,12 +156,12 @@ describe('admin safety use cases (integration)', () => {
 
     await expect(
       createUser.execute({
-        character: null,
         name: 'New Admin',
         email: 'new@example.com',
         password: 'password',
         roleUuids: [adminRole.uuid],
         actorId: actor.id,
+        character: null,
       }),
     ).rejects.toThrow(AdminRoleGrantForbiddenError);
     await expect(
@@ -184,12 +184,12 @@ describe('admin safety use cases (integration)', () => {
     const actor = await addUser('admin@example.com', adminRole);
 
     const created = await createUser.execute({
-      character: null,
       name: 'Second Admin',
       email: 'second@example.com',
       password: 'password',
       roleUuids: [adminRole.uuid],
       actorId: actor.id,
+      character: null,
     });
 
     expect(created.roles[0].name).toBe(RoleEnum.ADMIN);

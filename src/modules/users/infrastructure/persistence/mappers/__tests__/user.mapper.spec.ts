@@ -89,13 +89,13 @@ describe('UserMapper', () => {
 
   it('maps a domain UserEntity (new, id=0) to an ORM entity without setting the numeric id', () => {
     const domain = UserEntity.create({
-      character: null,
       uuid: 'user-uuid',
       name: 'Jane Doe',
       email: 'jane@example.com',
       password: 'hashed-password',
       roles: [buildRoleDomain()],
       createdBy: 101,
+      character: null,
     });
 
     const orm = UserMapper.toOrm(domain);
@@ -110,7 +110,6 @@ describe('UserMapper', () => {
 
   it('maps a domain UserEntity (persisted, id>0) to an ORM entity preserving the numeric id', () => {
     const domain = UserEntity.reconstitute({
-      character: null,
       id: 7,
       uuid: 'user-uuid',
       status: RecordStatus.ACTIVE,
@@ -125,6 +124,7 @@ describe('UserMapper', () => {
       createdBy: null,
       updatedBy: null,
       deletedBy: null,
+      character: null,
     });
 
     const orm = UserMapper.toOrm(domain);
@@ -134,13 +134,13 @@ describe('UserMapper', () => {
 
   it('maps the soft-delete actor between domain and ORM', () => {
     const deleted = UserEntity.create({
-      character: null,
       uuid: 'user-uuid',
       name: 'Jane Doe',
       email: 'jane@example.com',
       password: 'hashed-password',
       roles: [],
       createdBy: 101,
+      character: null,
     }).markDeleted(102);
 
     const orm = UserMapper.toOrm(deleted);
@@ -254,7 +254,6 @@ describe('UserMapper', () => {
 
   it('toOrm output never carries creatorName/updaterName', () => {
     const domain = UserEntity.reconstitute({
-      character: null,
       id: 7,
       uuid: 'user-uuid',
       status: RecordStatus.ACTIVE,
@@ -271,6 +270,7 @@ describe('UserMapper', () => {
       deletedBy: null,
       creatorName: 'Creator Name',
       updaterName: 'Updater Name',
+      character: null,
     });
 
     const orm = UserMapper.toOrm(domain);
@@ -285,7 +285,6 @@ describe('UserMapper', () => {
 
   it('carries updatedAt over onto the ORM entity (regression: role-only updates were silently dropping updated_at)', () => {
     const domain = UserEntity.reconstitute({
-      character: null,
       id: 7,
       uuid: 'user-uuid',
       status: RecordStatus.ACTIVE,
@@ -300,6 +299,7 @@ describe('UserMapper', () => {
       createdBy: null,
       updatedBy: null,
       deletedBy: null,
+      character: null,
     });
 
     const orm = UserMapper.toOrm(domain);
@@ -310,13 +310,13 @@ describe('UserMapper', () => {
   it('leaves updatedAt unset for a new user so the insert uses the same database timestamp as createdAt', () => {
     const orm = UserMapper.toOrm(
       UserEntity.create({
-        character: null,
         uuid: 'user-uuid',
         name: 'Jane Doe',
         email: 'jane@example.com',
         password: 'hashed-password',
         roles: [],
         createdBy: null,
+        character: null,
       }),
     );
 
@@ -350,7 +350,6 @@ describe('UserMapper', () => {
     const confirmedAt = new Date('2026-01-05T00:00:00.000Z');
 
     const domain = UserEntity.reconstitute({
-      character: null,
       id: 7,
       uuid: 'user-uuid',
       status: RecordStatus.ACTIVE,
@@ -365,6 +364,7 @@ describe('UserMapper', () => {
       createdBy: null,
       updatedBy: null,
       deletedBy: null,
+      character: null,
     });
 
     const orm = UserMapper.toOrm(domain);

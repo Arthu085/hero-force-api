@@ -166,16 +166,16 @@ describe('User session revocation (integration)', () => {
         targetUserId: user.id,
         requestedBy: requester.id,
         current: {
-          character: null,
           name: 'Jane Doe',
           email: user.email,
           roles,
+          character: null,
         },
         requested: {
-          character: null,
           name: 'Jane Renamed',
           email: user.email,
           roles,
+          character: null,
         },
         expiresAt: new Date(Date.now() + 60_000),
       }),

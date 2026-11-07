@@ -1,4 +1,5 @@
 import { randomUUID } from 'node:crypto';
+import { CharacterCode } from '@modules/characters';
 import { Test, TestingModule } from '@nestjs/testing';
 import { getDataSourceToken, TypeOrmModule } from '@nestjs/typeorm';
 import { DataSource } from 'typeorm';
@@ -177,13 +178,13 @@ describe('admin change requests (integration)', () => {
   async function addUser(name: string, email: string): Promise<UserEntity> {
     return users.create(
       UserEntity.create({
-        character: null,
         uuid: randomUUID(),
         name,
         email,
         password: 'hash',
         roles: [adminRole],
         createdBy: null,
+        character: null,
       }),
     );
   }
@@ -249,16 +250,16 @@ describe('admin change requests (integration)', () => {
           targetUserId: target.id,
           requestedBy: requester.id,
           current: {
-            character: null,
             name: 'Target',
             email: target.email,
             roles: [],
+            character: null,
           },
           requested: {
-            character: null,
             name: 'Bypass',
             email: target.email,
             roles: [],
+            character: null,
           },
           expiresAt: new Date(Date.now() + 60_000),
         }),
@@ -285,6 +286,38 @@ describe('admin change requests (integration)', () => {
     await expect(
       approve.execute({ uuid: created.uuid, actorId: target.id }),
     ).rejects.toThrow(UserChangeRequestNotPendingError);
+  });
+
+  it('stores both characters and applies, then removes, the requested one on approval', async () => {
+    const chosen = await requestChange.execute({
+      uuid: target.uuid,
+      character: CharacterCode.SUPERMAN,
+      actorId: requester.id,
+    });
+
+    const [stored] = await listMine.execute(target.id);
+
+    expect(stored.current.character).toBeNull();
+    expect(stored.requested.character).toBe(CharacterCode.SUPERMAN);
+
+    await approve.execute({ uuid: chosen.uuid, actorId: target.id });
+    expect((await users.findById(target.id))?.character).toBe(
+      CharacterCode.SUPERMAN,
+    );
+
+    const removal = await requestChange.execute({
+      uuid: target.uuid,
+      character: null,
+      actorId: requester.id,
+    });
+
+    const [pendingRemoval] = await listMine.execute(target.id);
+
+    expect(pendingRemoval.current.character).toBe(CharacterCode.SUPERMAN);
+    expect(pendingRemoval.requested.character).toBeNull();
+
+    await approve.execute({ uuid: removal.uuid, actorId: target.id });
+    expect((await users.findById(target.id))?.character).toBeNull();
   });
 
   it('leaves the target untouched on rejection', async () => {
@@ -331,11 +364,11 @@ describe('admin change requests (integration)', () => {
     const current = await users.findById(target.id);
     await users.update(
       current!.withProfile({
-        character: null,
         name: 'Changed Elsewhere',
         email: current!.email,
         roles: current!.roles,
         actorId: null,
+        character: null,
       }),
     );
 

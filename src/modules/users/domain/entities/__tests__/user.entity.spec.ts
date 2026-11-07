@@ -18,7 +18,6 @@ function buildRole(key: RoleEnum): RoleEntity {
 
 function buildConfirmedUser(): UserEntity {
   return UserEntity.reconstitute({
-    character: null,
     id: 1,
     uuid: 'user-uuid',
     status: RecordStatus.ACTIVE,
@@ -33,6 +32,7 @@ function buildConfirmedUser(): UserEntity {
     createdBy: 101,
     updatedBy: 101,
     deletedBy: null,
+    character: null,
   });
 }
 
@@ -41,13 +41,13 @@ describe('UserEntity', () => {
     const roles = [buildRole(RoleEnum.USER)];
 
     const user = UserEntity.create({
-      character: null,
       uuid: 'user-uuid',
       name: 'Jane Doe',
       email: 'jane@example.com',
       password: 'hashed-password',
       roles,
       createdBy: 101,
+      character: null,
     });
 
     expect(user.uuid).toBe('user-uuid');
@@ -66,13 +66,13 @@ describe('UserEntity', () => {
 
   it('create defaults createdBy/updatedBy to null when no actor is known', () => {
     const user = UserEntity.create({
-      character: null,
       uuid: 'user-uuid',
       name: 'Jane Doe',
       email: 'jane@example.com',
       password: 'hashed-password',
       roles: [],
       createdBy: null,
+      character: null,
     });
 
     expect(user.createdBy).toBeNull();
@@ -81,13 +81,13 @@ describe('UserEntity', () => {
 
   it('create defaults creatorName/updaterName to null regardless of createdBy', () => {
     const user = UserEntity.create({
-      character: null,
       uuid: 'user-uuid',
       name: 'Jane Doe',
       email: 'jane@example.com',
       password: 'hashed-password',
       roles: [],
       createdBy: 101,
+      character: null,
     });
 
     expect(user.creatorName).toBeNull();
@@ -101,7 +101,6 @@ describe('UserEntity', () => {
     const roles = [buildRole(RoleEnum.ADMIN)];
 
     const user = UserEntity.reconstitute({
-      character: null,
       id: 1,
       uuid: 'user-uuid',
       status: RecordStatus.ACTIVE,
@@ -116,6 +115,7 @@ describe('UserEntity', () => {
       createdBy: 101,
       updatedBy: 102,
       deletedBy: null,
+      character: null,
     });
 
     expect(user.id).toBe(1);
@@ -129,7 +129,6 @@ describe('UserEntity', () => {
 
   it('reconstitute carries creatorName/updaterName onto the entity when provided', () => {
     const user = UserEntity.reconstitute({
-      character: null,
       id: 1,
       uuid: 'user-uuid',
       status: RecordStatus.ACTIVE,
@@ -146,6 +145,7 @@ describe('UserEntity', () => {
       deletedBy: null,
       creatorName: 'Creator Name',
       updaterName: 'Updater Name',
+      character: null,
     });
 
     expect(user.creatorName).toBe('Creator Name');
@@ -154,7 +154,6 @@ describe('UserEntity', () => {
 
   it('reconstitute defaults creatorName/updaterName to null when omitted', () => {
     const user = UserEntity.reconstitute({
-      character: null,
       id: 1,
       uuid: 'user-uuid',
       status: RecordStatus.ACTIVE,
@@ -169,6 +168,7 @@ describe('UserEntity', () => {
       createdBy: 101,
       updatedBy: 102,
       deletedBy: null,
+      character: null,
     });
 
     expect(user.creatorName).toBeNull();
@@ -178,23 +178,23 @@ describe('UserEntity', () => {
   describe('withProfile', () => {
     it('returns a new instance with updated profile fields, preserving the password', () => {
       const user = UserEntity.create({
-        character: null,
         uuid: 'user-uuid',
         name: 'Jane Doe',
         email: 'jane@example.com',
         password: 'hashed-password',
         roles: [buildRole(RoleEnum.USER)],
         createdBy: 101,
+        character: null,
       });
 
       const newRoles = [buildRole(RoleEnum.ADMIN)];
 
       const updated = user.withProfile({
-        character: null,
         name: 'Jane Updated',
         email: 'jane.updated@example.com',
         roles: newRoles,
         actorId: 102,
+        character: null,
       });
 
       expect(updated).not.toBe(user);
@@ -213,11 +213,11 @@ describe('UserEntity', () => {
       expect(user.emailConfirmedAt).not.toBeNull();
 
       const updated = user.withProfile({
-        character: null,
         name: user.name,
         email: 'new-email@example.com',
         roles: [],
         actorId: 102,
+        character: null,
       });
 
       expect(updated.emailConfirmedAt).toBeNull();
@@ -227,11 +227,11 @@ describe('UserEntity', () => {
       const user = buildConfirmedUser();
 
       const updated = user.withProfile({
-        character: null,
         name: 'New Name Only',
         email: user.email,
         roles: [],
         actorId: 102,
+        character: null,
       });
 
       expect(updated.emailConfirmedAt).toBe(user.emailConfirmedAt);
@@ -239,7 +239,6 @@ describe('UserEntity', () => {
 
     it('preserves pre-existing creatorName/updaterName unchanged', () => {
       const user = UserEntity.reconstitute({
-        character: null,
         id: 1,
         uuid: 'user-uuid',
         status: RecordStatus.ACTIVE,
@@ -256,14 +255,15 @@ describe('UserEntity', () => {
         deletedBy: null,
         creatorName: 'Creator Name',
         updaterName: 'Updater Name',
+        character: null,
       });
 
       const updated = user.withProfile({
-        character: null,
         name: 'Jane Updated',
         email: 'jane.updated@example.com',
         roles: [],
         actorId: 102,
+        character: null,
       });
 
       expect(updated.creatorName).toBe('Creator Name');
@@ -274,13 +274,13 @@ describe('UserEntity', () => {
   describe('withEmailConfirmed', () => {
     it('sets emailConfirmedAt and updatedAt only, leaving every other field untouched', () => {
       const user = UserEntity.create({
-        character: null,
         uuid: 'user-uuid',
         name: 'Jane Doe',
         email: 'jane@example.com',
         password: 'hashed-password',
         roles: [buildRole(RoleEnum.USER)],
         createdBy: 101,
+        character: null,
       });
 
       const confirmedAt = new Date('2026-05-01T00:00:00.000Z');
@@ -326,13 +326,13 @@ describe('UserEntity', () => {
   describe('markDeleted', () => {
     it('returns a new instance with deletedAt set and the actor recorded, leaving status unchanged', () => {
       const user = UserEntity.create({
-        character: null,
         uuid: 'user-uuid',
         name: 'Jane Doe',
         email: 'jane@example.com',
         password: 'hashed-password',
         roles: [],
         createdBy: 101,
+        character: null,
       });
 
       const deleted = user.markDeleted(102);
@@ -350,7 +350,6 @@ describe('UserEntity', () => {
 
     it('leaves an already-inactive status untouched', () => {
       const user = UserEntity.reconstitute({
-        character: null,
         id: 1,
         uuid: 'user-uuid',
         status: RecordStatus.INACTIVE,
@@ -365,6 +364,7 @@ describe('UserEntity', () => {
         createdBy: 101,
         updatedBy: 101,
         deletedBy: null,
+        character: null,
       });
 
       const deleted = user.markDeleted(102);
@@ -383,7 +383,6 @@ describe('UserEntity', () => {
 
     it('preserves pre-existing creatorName/updaterName unchanged', () => {
       const user = UserEntity.reconstitute({
-        character: null,
         id: 1,
         uuid: 'user-uuid',
         status: RecordStatus.ACTIVE,
@@ -400,6 +399,7 @@ describe('UserEntity', () => {
         deletedBy: null,
         creatorName: 'Creator Name',
         updaterName: 'Updater Name',
+        character: null,
       });
 
       const deleted = user.markDeleted(102);
@@ -417,7 +417,6 @@ describe('UserEntity', () => {
       const roles = [buildRole(RoleEnum.USER)];
 
       const user = UserEntity.reconstitute({
-        character: null,
         id: 1,
         uuid: 'user-uuid',
         status: RecordStatus.ACTIVE,
@@ -432,6 +431,7 @@ describe('UserEntity', () => {
         createdBy: 101,
         updatedBy: 101,
         deletedBy: null,
+        character: null,
       });
 
       const updated = user.withStatus(RecordStatus.INACTIVE, 102);
@@ -454,7 +454,6 @@ describe('UserEntity', () => {
 
     it('preserves pre-existing creatorName/updaterName unchanged', () => {
       const user = UserEntity.reconstitute({
-        character: null,
         id: 1,
         uuid: 'user-uuid',
         status: RecordStatus.ACTIVE,
@@ -471,6 +470,7 @@ describe('UserEntity', () => {
         deletedBy: null,
         creatorName: 'Creator Name',
         updaterName: 'Updater Name',
+        character: null,
       });
 
       const updated = user.withStatus(RecordStatus.INACTIVE, 102);

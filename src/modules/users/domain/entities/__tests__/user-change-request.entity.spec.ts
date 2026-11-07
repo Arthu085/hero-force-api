@@ -20,16 +20,16 @@ describe('UserChangeRequestEntity', () => {
       targetUserId: 1,
       requestedBy: 2,
       current: {
-        character: null,
         name: 'Jane',
         email: 'jane@example.com',
         roles: [admin],
+        character: null,
       },
       requested: {
-        character: null,
         name: 'Janet',
         email: 'jane@example.com',
         roles: [admin],
+        character: null,
       },
       expiresAt: new Date(Date.now() + 1000),
     });

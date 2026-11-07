@@ -9,6 +9,7 @@ import {
   EmailSchedulingUnavailableError,
   type EmailOutboxPort,
 } from '@shared/application/ports';
+import { CharacterCode } from '@modules/characters';
 import { buildUser } from '@test/support/builders/user.builder';
 import { mockOf } from '@test/support/mocks/mock-of';
 import type { UserEntity } from '../../../domain/entities/user.entity';
@@ -179,6 +180,24 @@ describe('RequestUserChangeUseCase', () => {
       email: 'target@example.com',
       roles: [adminRole],
       character: null,
+    });
+  });
+
+  it('requests a new character and keeps every other value', async () => {
+    const { useCase } = buildHarness();
+
+    const request = await useCase.execute({
+      uuid: 'target-uuid',
+      character: CharacterCode.THOR,
+      actorId: 9,
+    });
+
+    expect(request.current.character).toBeNull();
+    expect(request.requested).toEqual({
+      name: 'Target Admin',
+      email: 'target@example.com',
+      roles: [adminRole],
+      character: CharacterCode.THOR,
     });
   });
 

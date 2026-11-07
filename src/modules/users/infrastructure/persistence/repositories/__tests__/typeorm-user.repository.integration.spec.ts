@@ -76,25 +76,25 @@ describe('TypeOrmUserRepository (integration)', () => {
     roles: Array<ReturnType<typeof buildRoleEntityStub>>,
   ): UserEntity {
     return UserEntity.create({
-      character: null,
       uuid: randomUUID(),
       name: 'Jane Doe',
       email,
       password: 'hashed-password',
       roles,
       createdBy: null,
+      character: null,
     });
   }
 
   function buildNewNamedUser(name: string, email: string): UserEntity {
     return UserEntity.create({
-      character: null,
       uuid: randomUUID(),
       name,
       email,
       password: 'hashed-password',
       roles: [],
       createdBy: null,
+      character: null,
     });
   }
 
@@ -369,11 +369,11 @@ describe('TypeOrmUserRepository (integration)', () => {
       await expect(
         repository.update(
           user.withProfile({
-            character: null,
             name: user.name,
             email: 'taken@example.com',
             roles: [],
             actorId: null,
+            character: null,
           }),
         ),
       ).rejects.toBeInstanceOf(EmailAlreadyInUseError);
@@ -394,11 +394,11 @@ describe('TypeOrmUserRepository (integration)', () => {
       const moveTo = (user: UserEntity) =>
         repository.update(
           user.withProfile({
-            character: null,
             name: user.name,
             email: 'contested@example.com',
             roles: [],
             actorId: null,
+            character: null,
           }),
         );
 
@@ -419,13 +419,13 @@ describe('TypeOrmUserRepository (integration)', () => {
       );
 
       const duplicateUuid = UserEntity.create({
-        character: null,
         uuid: existing.uuid,
         name: 'John Doe',
         email: 'john@example.com',
         password: 'hashed-password',
         roles: [],
         createdBy: null,
+        character: null,
       });
 
       const error: unknown = await repository
@@ -641,11 +641,11 @@ describe('TypeOrmUserRepository (integration)', () => {
     );
 
     const updated = created.withProfile({
-      character: null,
       name: 'Jane Updated',
       email: 'jane.updated@example.com',
       roles: [buildRoleEntityStub(roleB)],
       actorId: created.id,
+      character: null,
     });
 
     const result = await repository.update(updated);
@@ -679,11 +679,11 @@ describe('TypeOrmUserRepository (integration)', () => {
     await new Promise((r) => setTimeout(r, 5));
 
     const updated = created.withProfile({
-      character: null,
       name: created.name,
       email: created.email,
       roles: [buildRoleEntityStub(roleB)],
       actorId: null,
+      character: null,
     });
 
     const result = await repository.update(updated);
@@ -774,13 +774,13 @@ describe('TypeOrmUserRepository (integration)', () => {
       createdBy: number | null,
     ): UserEntity {
       return UserEntity.create({
-        character: null,
         uuid: randomUUID(),
         name,
         email,
         password: 'hashed-password',
         roles: [],
         createdBy,
+        character: null,
       });
     }
 
@@ -926,13 +926,13 @@ describe('TypeOrmUserRepository (integration)', () => {
 
       return repository.create(
         UserEntity.create({
-          character: null,
           uuid: randomUUID(),
           name: 'Jane Doe',
           email: 'jane@example.com',
           password: 'hashed-password',
           roles: [buildRoleEntityStub(roleRow)],
           createdBy: author.id,
+          character: null,
         }),
       );
     }
