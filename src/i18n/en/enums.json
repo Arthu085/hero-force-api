@@ -19,5 +19,18 @@
     "marvel": "Marvel",
     "dc": "DC",
     "others": "Others"
+  },
+  "project_status": {
+    "pending": "Pending",
+    "in_progress": "In progress",
+    "completed": "Completed"
+  },
+  "project_goal": {
+    "agility": "Agility",
+    "delight": "Delight",
+    "efficiency": "Efficiency",
+    "excellence": "Excellence",
+    "transparency": "Transparency",
+    "ambition": "Ambition"
   }
 }

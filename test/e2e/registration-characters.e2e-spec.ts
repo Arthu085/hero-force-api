@@ -451,7 +451,9 @@ describe('Public registration and characters (e2e)', () => {
 
       await expect(
         agent.get('/api/users/me/abilities').expect(200),
-      ).resolves.toMatchObject({ body: { data: [] } });
+      ).resolves.toMatchObject({
+        body: { data: [{ action: 'READ', subject: 'PROJECT' }] },
+      });
 
       const renamed = await agent
         .patch('/api/users/me')

@@ -11,6 +11,7 @@ import { AuditModule } from '@modules/audit/audit.module';
 import { AuthModule } from '@modules/auth/auth.module';
 import { AuthorizationModule } from '@modules/authorization/authorization.module';
 import { CharactersModule } from '@modules/characters/characters.module';
+import { ProjectsModule } from '@modules/projects/projects.module';
 import { UsersModule } from '@modules/users/users.module';
 
 @Module({
@@ -25,6 +26,7 @@ import { UsersModule } from '@modules/users/users.module';
     AuthorizationModule,
     CharactersModule,
     UsersModule,
+    ProjectsModule,
     CoreHealthModule,
     CoreI18nModule,
     CoreHttpModule,

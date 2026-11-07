@@ -3,7 +3,10 @@ import { getDataSourceToken } from '@nestjs/typeorm';
 import { DataSource, QueryRunner } from 'typeorm';
 import { CoreConfigModule } from '@core/config';
 import { RoleEnum } from '@modules/authorization/domain/enums/role.enum';
-import { ABILITY_CATALOG } from '@modules/authorization/domain/catalog/ability-catalog';
+import {
+  ABILITY_CATALOG,
+  ROLE_ABILITY_GRANTS,
+} from '@modules/authorization/domain/catalog/ability-catalog';
 import { AbilitiesSeeder } from '@modules/authorization/infrastructure/seeds/abilities.seeder';
 import { RolesSeeder } from '@modules/authorization/infrastructure/seeds/roles.seeder';
 import { Action } from '@shared/domain/enums/action.enum';
@@ -45,6 +48,7 @@ describe('RevokeReadUserFromUserRole1794068245174 (integration)', () => {
   });
 
   afterEach(async () => {
+    jest.restoreAllMocks();
     await dataSource.query(
       'TRUNCATE TABLE "roles", "abilities" RESTART IDENTITY CASCADE',
     );
@@ -79,6 +83,8 @@ describe('RevokeReadUserFromUserRole1794068245174 (integration)', () => {
   // Reproduces a database seeded by the previous release, where USER was
   // granted (READ, USER) by default, plus a grant added at runtime.
   async function seedPreviousReleaseGrants(): Promise<void> {
+    jest.replaceProperty(ROLE_ABILITY_GRANTS, RoleEnum.USER, []);
+
     await new AbilitiesSeeder().run(dataSource.manager);
     await new RolesSeeder().run(dataSource.manager);
     await grant(RoleEnum.USER, READ_USER);
