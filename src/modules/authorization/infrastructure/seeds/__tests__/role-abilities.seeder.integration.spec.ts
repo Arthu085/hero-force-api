@@ -90,7 +90,7 @@ describe('RoleAbilitiesSeeder (integration)', () => {
     const userGrants = await grantsOf(RoleEnum.USER);
 
     expect(adminGrants).toEqual(ABILITY_CATALOG.map(pairKey).sort());
-    expect(userGrants).toEqual([]);
+    expect(userGrants).toEqual(['READ:PROJECT']);
 
     await runAuthorizationSeeds();
 

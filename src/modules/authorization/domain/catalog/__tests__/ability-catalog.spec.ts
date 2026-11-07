@@ -30,7 +30,9 @@ describe('ability-catalog', () => {
     );
   });
 
-  it('grants USER no abilities', () => {
-    expect(ROLE_ABILITY_GRANTS[RoleEnum.USER]).toEqual([]);
+  it('grants USER only READ on PROJECT', () => {
+    expect(ROLE_ABILITY_GRANTS[RoleEnum.USER]).toEqual([
+      { action: Action.READ, subject: Subject.PROJECT },
+    ]);
   });
 });

@@ -17,14 +17,16 @@ payloads are in Swagger; this document covers the rules behind them.
   revoker registries `EMAIL_CHANGE_TOKEN_REVOKERS`, `PASSWORD_CHANGE_TOKEN_REVOKERS`, and
   `USER_SESSION_REVOKERS` with their port types, all consumed by `auth`.
 - `presentation.ts`: `UserDetailResponseDto`, returned by `auth`'s login and refresh.
-- `persistence.ts`: `UsersSeeder`. `auth`'s token ORM entities import `UserOrmEntity` directly.
+- `persistence.ts`: `UsersSeeder`, and `UserOrmEntity` for the `projects` hero lookup adapter.
+  `auth`'s token ORM entities and `ProjectOrmEntity` import `UserOrmEntity` directly.
 - `users.module.ts`: `UsersModule`.
 
 ## Status and deletion
 
 `status` (reversible `ACTIVE`/`INACTIVE`) and `deletedAt` (irreversible through the API) are
 independent: deactivating never soft-deletes and soft-deleting never changes `status`. There is no
-hard delete.
+hard delete. Neither touches the user's [projects](projects.md#responsible-hero), which keep them as
+responsible until an administrator reassigns them.
 
 `GetUserUseCase`, `UpdateUserUseCase`, `UpdateOwnProfileUseCase`, and `ConfirmUserEmailUseCase` reject an inactive user with
 `InactiveUserError` (`409`). The status toggle is exempt because it is the only way back to

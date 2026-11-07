@@ -15,8 +15,8 @@ interface FakeRoleRow {
 
 const READ_USER = { action: Action.READ, subject: Subject.USER };
 
-// USER ships without default grants, so specs that exercise default-grant
-// resolution give it one for the duration of the test.
+// Pins USER's default grants so these specs do not depend on the shipped
+// catalog defaults.
 function grantUserReadUserByDefault(): void {
   jest.replaceProperty(ROLE_ABILITY_GRANTS, RoleEnum.USER, [READ_USER]);
 }
@@ -103,6 +103,8 @@ describe('RolesSeeder', () => {
 
   // An empty `where` array would match every ability, granting the whole catalog.
   it('creates a role with no grants when its default grant list is empty', async () => {
+    jest.replaceProperty(ROLE_ABILITY_GRANTS, RoleEnum.USER, []);
+
     const { manager, rows, abilityFind } = buildManager([
       { name: RoleEnum.ADMIN },
     ]);

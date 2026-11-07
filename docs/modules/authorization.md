@@ -47,7 +47,8 @@ relations without attributes of their own, so neither has its own entity.
 
 The ability catalog is the full `Action × Subject` cross-product, but not every pair guards a route:
 
-- **In use:** all four `USER` pairs, `(READ, ROLE)` and `(UPDATE, ROLE)`, and `(READ, ABILITY)`.
+- **In use:** all four `USER` pairs, `(READ, ROLE)` and `(UPDATE, ROLE)`, `(READ, ABILITY)`, and all
+  four `PROJECT` pairs ([`projects.md`](projects.md#access)).
 - **Reserved:** `(CREATE, ROLE)`, `(DELETE, ROLE)`, `(CREATE, ABILITY)`, `(UPDATE, ABILITY)`, and
   `(DELETE, ABILITY)`, the operations that are not manageable at runtime.
 
@@ -103,16 +104,18 @@ transaction and throw when a prerequisite is missing. They are idempotent and **
 they insert what is missing and never delete or reset a grant, so runtime changes survive every
 re-seed, including the Compose `api` start.
 
-Default grants (`ROLE_ABILITY_GRANTS`): `ADMIN` gets the full catalog and `USER` none, so a
-self-registered account reaches only the self-service routes under `/users/me`, which need no
-ability, and cannot list or read other users.
+Default grants (`ROLE_ABILITY_GRANTS`): `ADMIN` gets the full catalog and `USER` only
+`(READ, PROJECT)`, so a self-registered account reaches the self-service routes under `/users/me`,
+which need no ability, and the projects assigned to it, but cannot list or read other users.
 
 - **`RolesSeeder` applies a role's defaults only when it creates the role.** Existing roles, including
   ones whose grants were edited or emptied, are left untouched, so a changed default for a non-`ADMIN`
   role reaches only fresh databases; existing ones are updated through the endpoint or a data
   migration. `RevokeReadUserFromUserRole1794068245174` removes the former `USER` default
   `(READ, USER)` from existing databases; it is a no-op when the grant is absent, and reverting it
-  grants the pair again.
+  grants the pair again. `GrantReadProjectToUserRole1794070369426` creates the `(READ, PROJECT)`
+  ability when missing and grants it to an existing `USER` role; it is idempotent, does nothing to
+  roles that do not exist yet, and reverting it revokes only that grant.
 - **`RoleAbilitiesSeeder` tops up `ADMIN`** with any catalog ability it lacks. Because `ADMIN`'s
   grants cannot change at runtime, this is how a new catalog ability reaches `ADMIN` in an existing
   database.
@@ -122,3 +125,14 @@ ability, and cannot list or read other users.
 ## Configuration
 
 None.
+
+## Adding a subject
+
+A new `Subject` value extends the `abilities_subject_enum` PostgreSQL type. Pending migrations share
+one transaction, and a value added with `ALTER TYPE ... ADD VALUE` cannot be used until that
+transaction commits, so a data migration in the same run could not insert or grant the new pairs.
+`AddProjectAbilitySubject1794070345103` therefore recreates the type with the new value (rename,
+create, cast the column, drop the old type) in a hand-written migration; its revert deletes the
+`PROJECT` abilities and their grants first so the old type can be restored. Follow the same pattern
+for the next subject.
+

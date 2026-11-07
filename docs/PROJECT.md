@@ -8,8 +8,8 @@ What this API does, which modules it has, and the data it seeds. Engineering rul
 
 The Hero Force REST API. It provides the Hero Force web client with authentication through
 cookie-based sessions, public self-registration, user and role management with administrator
-safeguards, an optional superhero character per user from a fixed catalog, ability-based
-authorization, request auditing, and transactional email delivery (email confirmation, password
+safeguards, an optional superhero character per user from a fixed catalog, project management with six fixed
+goals and a dashboard, ability-based authorization, request auditing, and transactional email delivery (email confirmation, password
 reset, and account notifications).
 
 ## Stack
@@ -29,6 +29,7 @@ reset, and account notifications).
 | [`auth`](modules/auth.md) | Login, refresh, logout, password recovery, CSRF token issuance; binds the global CSRF, JWT, and ability guards | Yes |
 | [`users`](modules/users.md) | Public self-registration, user management, role and character assignment, admin protection and change approvals, self-service profile and password change, email confirmation | Yes |
 | [`characters`](modules/characters.md) | Fixed, code-defined catalog of superhero characters users may pick | Yes |
+| [`projects`](modules/projects.md) | Projects with a responsible hero, six fixed goals, derived progress and status, and dashboard statistics | Yes |
 | [`authorization`](modules/authorization.md) | Fixed Role/Ability catalog, role grant management, and the `AbilitiesGuard` | Yes |
 | [`audit`](modules/audit.md) | Append-only trail of HTTP requests on opted-in routes | No |
 | [`email-quota`](modules/email-quota.md) | Per-recipient, per-type, per-UTC-day send cap; fails closed | No |
@@ -42,8 +43,9 @@ administrator or by the seed.
 `npm run seed` (and `seed:prod`) provisions:
 
 - the roles `ADMIN` and `USER`;
-- the full ability catalog, with `ADMIN` granted every ability and `USER` none (self-service routes
-  under `/users/me` need no ability);
+- the full ability catalog, with `ADMIN` granted every ability and `USER` only `(READ, PROJECT)`,
+  which shows a hero the projects assigned to them (self-service routes under `/users/me` need no
+  ability);
 - one confirmed administrator from `SEED_ADMIN_EMAIL` / `SEED_ADMIN_PASSWORD`, skipped in production
   unless `SEED_ADMIN_ENABLED=true`.
 
