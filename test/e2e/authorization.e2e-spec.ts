@@ -314,6 +314,42 @@ describe('Authorization (Roles + Abilities) (e2e)', () => {
     expect(body.meta.message).toBe(PT_BR.updated);
   });
 
+  it.each([Action.CREATE, Action.UPDATE, Action.DELETE])(
+    'rejects USER %s PROJECT with localized 422 and preserves the stored grants',
+    async (action) => {
+      const user = await getRoleDetailByName('USER');
+
+      for (const [language, message] of [
+        [
+          'pt-BR',
+          'As permissões de criar, atualizar e excluir projetos não podem ser concedidas ao papel Usuário porque o gerenciamento de projetos exige o papel Administrador',
+        ],
+        [
+          'en',
+          'Create, update, and delete permissions for projects cannot be granted to the User role because project management requires the Administrator role',
+        ],
+      ]) {
+        const response = await agent
+          .patch(`/api/roles/${user.uuid}/abilities`)
+          .set('x-lang', language)
+          .send({
+            abilities: [
+              { action: Action.READ, subject: 'PROJECT' },
+              { action, subject: 'PROJECT' },
+            ],
+          })
+          .expect(422);
+
+        expect((response.body as ErrorBody).message).toBe(message);
+        expect(response.body).not.toHaveProperty('requiredAbilities');
+      }
+
+      expect((await getRoleDetailByName('USER')).abilities).toEqual(
+        user.abilities,
+      );
+    },
+  );
+
   // `subject` is validated with `@IsEnum(Subject)`, so a non-catalog string is
   // rejected by DTO validation (400) before reaching the use-case's
   // `UnknownAbilityError` (422), which `update-role-abilities.use-case.spec.ts`
@@ -403,7 +439,7 @@ describe('Authorization (Roles + Abilities) (e2e)', () => {
     const admin = await getRoleByName('ADMIN');
 
     const payload = {
-      abilities: [{ action: Action.READ, subject: 'USER' }],
+      abilities: [{ action: Action.CREATE, subject: 'PROJECT' }],
     };
 
     const ptResponse = await agent

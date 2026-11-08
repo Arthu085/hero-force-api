@@ -1,3 +1,4 @@
+import { mockOf } from '@test/support/mocks/mock-of';
 import { Subject } from '@shared/domain/authorization/subject';
 import { Action } from '@shared/domain/enums/action.enum';
 import { RecordStatus } from '@shared/domain/enums/record-status.enum';
@@ -9,6 +10,7 @@ import { InactiveAbilityError } from '../../../domain/errors/inactive-ability.er
 import { InactiveRoleError } from '../../../domain/errors/inactive-role.error';
 import { RoleNotFoundError } from '../../../domain/errors/role-not-found.error';
 import { UnknownAbilityError } from '../../../domain/errors/unknown-ability.error';
+import { UserProjectAbilitiesRestrictedError } from '../../../domain/errors/user-project-abilities-restricted.error';
 import type { AbilityRepository } from '../../../domain/repositories/ability.repository';
 import type { RoleRepository } from '../../../domain/repositories/role.repository';
 import { UpdateRoleAbilitiesUseCase } from '../update-role-abilities.use-case';
@@ -28,12 +30,12 @@ describe('UpdateRoleAbilitiesUseCase', () => {
       return { ...this, abilities };
     });
 
-    const role = {
+    const role = mockOf<RoleEntity>({
       uuid: 'role-1',
       status,
       name,
       withAbilities,
-    } as unknown as RoleEntity;
+    });
 
     return { role, withAbilities };
   }
@@ -42,7 +44,7 @@ describe('UpdateRoleAbilitiesUseCase', () => {
     const { role, withAbilities } = buildRole();
 
     const resolvedAbilities = [
-      { uuid: 'ability-1', status: RecordStatus.ACTIVE } as AbilityEntity,
+      mockOf<AbilityEntity>({ uuid: 'ability-1', status: RecordStatus.ACTIVE }),
     ];
 
     const updatedRole = { uuid: 'role-1', abilities: resolvedAbilities };
@@ -50,16 +52,16 @@ describe('UpdateRoleAbilitiesUseCase', () => {
     const findByUuid = jest.fn().mockResolvedValue(role);
     const update = jest.fn().mockResolvedValue(updatedRole);
 
-    const roleRepository = {
+    const roleRepository = mockOf<RoleRepository>({
       findByUuid,
       update,
-    } as unknown as RoleRepository;
+    });
 
     const findByPairs = jest.fn().mockResolvedValue(resolvedAbilities);
 
-    const abilityRepository = {
+    const abilityRepository = mockOf<AbilityRepository>({
       findByPairs,
-    } as unknown as AbilityRepository;
+    });
 
     const useCase = new UpdateRoleAbilitiesUseCase(
       roleRepository,
@@ -79,26 +81,56 @@ describe('UpdateRoleAbilitiesUseCase', () => {
     expect(update).toHaveBeenCalledTimes(1);
   });
 
+  it.each([Action.CREATE, Action.UPDATE, Action.DELETE])(
+    'rejects USER %s PROJECT before resolving or mutating any grants',
+    async (action) => {
+      const { role, withAbilities } = buildRole();
+      const update = jest.fn();
+      const findByPairs = jest.fn();
+
+      const useCase = new UpdateRoleAbilitiesUseCase(
+        mockOf<RoleRepository>({
+          findByUuid: jest.fn().mockResolvedValue(role),
+          update,
+        }),
+        mockOf<AbilityRepository>({ findByPairs }),
+      );
+
+      await expect(
+        useCase.execute({
+          roleUuid: role.uuid,
+          abilities: [
+            { action: Action.READ, subject: Subject.PROJECT },
+            { action, subject: Subject.PROJECT },
+          ],
+        }),
+      ).rejects.toBeInstanceOf(UserProjectAbilitiesRestrictedError);
+      expect(findByPairs).not.toHaveBeenCalled();
+      expect(withAbilities).not.toHaveBeenCalled();
+      expect(update).not.toHaveBeenCalled();
+    },
+  );
+
   it('collapses duplicate pairs instead of reporting them as unknown abilities', async () => {
     const { role, withAbilities } = buildRole();
 
     const resolvedAbilities = [
-      { uuid: 'ability-1', status: RecordStatus.ACTIVE } as AbilityEntity,
-      { uuid: 'ability-2', status: RecordStatus.ACTIVE } as AbilityEntity,
+      mockOf<AbilityEntity>({ uuid: 'ability-1', status: RecordStatus.ACTIVE }),
+      mockOf<AbilityEntity>({ uuid: 'ability-2', status: RecordStatus.ACTIVE }),
     ];
 
     const updatedRole = { uuid: 'role-1', abilities: resolvedAbilities };
 
-    const roleRepository = {
+    const roleRepository = mockOf<RoleRepository>({
       findByUuid: jest.fn().mockResolvedValue(role),
       update: jest.fn().mockResolvedValue(updatedRole),
-    } as unknown as RoleRepository;
+    });
 
     const findByPairs = jest.fn().mockResolvedValue(resolvedAbilities);
 
-    const abilityRepository = {
+    const abilityRepository = mockOf<AbilityRepository>({
       findByPairs,
-    } as unknown as AbilityRepository;
+    });
 
     const useCase = new UpdateRoleAbilitiesUseCase(
       roleRepository,
@@ -125,11 +157,11 @@ describe('UpdateRoleAbilitiesUseCase', () => {
 
   it('throws RoleNotFoundError when the role does not exist', async () => {
     const findByUuid = jest.fn().mockResolvedValue(null);
-    const roleRepository = { findByUuid } as unknown as RoleRepository;
+    const roleRepository = mockOf<RoleRepository>({ findByUuid });
 
-    const abilityRepository = {
+    const abilityRepository = mockOf<AbilityRepository>({
       findByPairs: jest.fn(),
-    } as unknown as AbilityRepository;
+    });
 
     const useCase = new UpdateRoleAbilitiesUseCase(
       roleRepository,
@@ -145,21 +177,22 @@ describe('UpdateRoleAbilitiesUseCase', () => {
     const { role } = buildRole();
     const findByUuid = jest.fn().mockResolvedValue(role);
 
-    const roleRepository = {
+    const roleRepository = mockOf<RoleRepository>({
       findByUuid,
       update: jest.fn(),
-    } as unknown as RoleRepository;
+    });
 
     // Only one of the two requested pairs resolves.
-    const findByPairs = jest
-      .fn()
-      .mockResolvedValue([
-        { uuid: 'ability-1', status: RecordStatus.ACTIVE } as AbilityEntity,
-      ]);
+    const findByPairs = jest.fn().mockResolvedValue([
+      mockOf<AbilityEntity>({
+        uuid: 'ability-1',
+        status: RecordStatus.ACTIVE,
+      }),
+    ]);
 
-    const abilityRepository = {
+    const abilityRepository = mockOf<AbilityRepository>({
       findByPairs,
-    } as unknown as AbilityRepository;
+    });
 
     const useCase = new UpdateRoleAbilitiesUseCase(
       roleRepository,
@@ -181,19 +214,23 @@ describe('UpdateRoleAbilitiesUseCase', () => {
     const { role, withAbilities } = buildRole();
     const update = jest.fn();
 
-    const roleRepository = {
+    const roleRepository = mockOf<RoleRepository>({
       findByUuid: jest.fn().mockResolvedValue(role),
       update,
-    } as unknown as RoleRepository;
+    });
 
-    const abilityRepository = {
-      findByPairs: jest
-        .fn()
-        .mockResolvedValue([
-          { uuid: 'ability-1', status: RecordStatus.ACTIVE } as AbilityEntity,
-          { uuid: 'ability-2', status: RecordStatus.INACTIVE } as AbilityEntity,
-        ]),
-    } as unknown as AbilityRepository;
+    const abilityRepository = mockOf<AbilityRepository>({
+      findByPairs: jest.fn().mockResolvedValue([
+        mockOf<AbilityEntity>({
+          uuid: 'ability-1',
+          status: RecordStatus.ACTIVE,
+        }),
+        mockOf<AbilityEntity>({
+          uuid: 'ability-2',
+          status: RecordStatus.INACTIVE,
+        }),
+      ]),
+    });
 
     const useCase = new UpdateRoleAbilitiesUseCase(
       roleRepository,
@@ -219,16 +256,16 @@ describe('UpdateRoleAbilitiesUseCase', () => {
     const findByUuid = jest.fn().mockResolvedValue(role);
     const update = jest.fn();
 
-    const roleRepository = {
+    const roleRepository = mockOf<RoleRepository>({
       findByUuid,
       update,
-    } as unknown as RoleRepository;
+    });
 
     const findByPairs = jest.fn();
 
-    const abilityRepository = {
+    const abilityRepository = mockOf<AbilityRepository>({
       findByPairs,
-    } as unknown as AbilityRepository;
+    });
 
     const useCase = new UpdateRoleAbilitiesUseCase(
       roleRepository,
@@ -257,16 +294,16 @@ describe('UpdateRoleAbilitiesUseCase', () => {
     const findByUuid = jest.fn().mockResolvedValue(role);
     const update = jest.fn().mockResolvedValue(updatedRole);
 
-    const roleRepository = {
+    const roleRepository = mockOf<RoleRepository>({
       findByUuid,
       update,
-    } as unknown as RoleRepository;
+    });
 
     const findByPairs = jest.fn().mockResolvedValue([]);
 
-    const abilityRepository = {
+    const abilityRepository = mockOf<AbilityRepository>({
       findByPairs,
-    } as unknown as AbilityRepository;
+    });
 
     const useCase = new UpdateRoleAbilitiesUseCase(
       roleRepository,
@@ -287,16 +324,16 @@ describe('UpdateRoleAbilitiesUseCase', () => {
     const findByUuid = jest.fn().mockResolvedValue(role);
     const update = jest.fn();
 
-    const roleRepository = {
+    const roleRepository = mockOf<RoleRepository>({
       findByUuid,
       update,
-    } as unknown as RoleRepository;
+    });
 
     const findByPairs = jest.fn();
 
-    const abilityRepository = {
+    const abilityRepository = mockOf<AbilityRepository>({
       findByPairs,
-    } as unknown as AbilityRepository;
+    });
 
     const useCase = new UpdateRoleAbilitiesUseCase(
       roleRepository,
@@ -319,16 +356,16 @@ describe('UpdateRoleAbilitiesUseCase', () => {
     const findByUuid = jest.fn().mockResolvedValue(role);
     const update = jest.fn();
 
-    const roleRepository = {
+    const roleRepository = mockOf<RoleRepository>({
       findByUuid,
       update,
-    } as unknown as RoleRepository;
+    });
 
     const findByPairs = jest.fn();
 
-    const abilityRepository = {
+    const abilityRepository = mockOf<AbilityRepository>({
       findByPairs,
-    } as unknown as AbilityRepository;
+    });
 
     const useCase = new UpdateRoleAbilitiesUseCase(
       roleRepository,
@@ -348,16 +385,16 @@ describe('UpdateRoleAbilitiesUseCase', () => {
     const findByUuid = jest.fn().mockResolvedValue(role);
     const update = jest.fn();
 
-    const roleRepository = {
+    const roleRepository = mockOf<RoleRepository>({
       findByUuid,
       update,
-    } as unknown as RoleRepository;
+    });
 
     const findByPairs = jest.fn();
 
-    const abilityRepository = {
+    const abilityRepository = mockOf<AbilityRepository>({
       findByPairs,
-    } as unknown as AbilityRepository;
+    });
 
     const useCase = new UpdateRoleAbilitiesUseCase(
       roleRepository,

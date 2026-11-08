@@ -5,7 +5,8 @@
     "missing_ability": "Você não possui permissão para executar esta ação",
     "role_inactive": "Papel inativo",
     "ability_inactive": "Uma ou mais permissões informadas estão inativas",
-    "admin_role_abilities_immutable": "As permissões do papel Administrador não podem ser alteradas"
+    "admin_role_abilities_immutable": "As permissões do papel Administrador não podem ser alteradas",
+    "user_project_abilities_restricted": "As permissões de criar, atualizar e excluir projetos não podem ser concedidas ao papel Usuário porque o gerenciamento de projetos exige o papel Administrador"
   },
   "role_label": {
     "admin": "Administrador",
