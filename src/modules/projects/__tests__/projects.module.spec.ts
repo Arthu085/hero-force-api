@@ -23,6 +23,7 @@ describe('ProjectsModule routes', () => {
       ['ProjectsController', 'PATCH /projects/:uuid', false],
       ['ProjectsController', 'PATCH /projects/:uuid/goals', false],
       ['ProjectsController', 'DELETE /projects/:uuid', false],
+      ['ProjectHistoryController', 'GET /projects/:uuid/history', false],
     ]);
   });
 

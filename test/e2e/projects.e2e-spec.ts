@@ -84,6 +84,86 @@ describe('Projects (e2e)', () => {
     await app.close();
   });
 
+  it('serves read-only history with current project visibility, validation, and safe event values', async () => {
+    const project = await createProject('Timeline', heroUuid);
+    await admin
+      .patch(`/api/projects/${project.uuid}`)
+      .send({ name: 'Timeline renamed', description: 'Changed' })
+      .expect(200);
+    await admin
+      .patch(`/api/projects/${project.uuid}/goals`)
+      .send({ goals: [{ goal: 'AGILITY', progress: 20 }] })
+      .expect(200);
+    await admin
+      .patch(`/api/projects/${project.uuid}/goals`)
+      .send({ goals: [{ goal: 'AGILITY', progress: 70 }] })
+      .expect(200);
+
+    const response = await hero
+      .get(`/api/projects/${project.uuid}/history?page=1&limit=2`)
+      .expect(200);
+
+    const body = response.body as EnvelopeBody<
+      Array<{
+        uuid: string;
+        type: string;
+        createdAt: string;
+        actor: { uuid: string; name: string };
+        goal: string | null;
+        previousValues: { progress?: number };
+        newValues: { progress?: number };
+      }>
+    >;
+
+    expect(body.meta).toMatchObject({ total: 5, page: 1, limit: 2 });
+    expect(body.data).toHaveLength(2);
+    expect(body.data[0]).toMatchObject({
+      type: 'GOAL_PROGRESS_CHANGED',
+      goal: 'AGILITY',
+      actor: { uuid: adminUuid },
+      previousValues: { progress: 20 },
+      newValues: { progress: 70 },
+    });
+    expect(Object.keys(body.data[0].actor).sort()).toEqual(['name', 'uuid']);
+    expect(Object.keys(body.data[0]).sort()).toEqual([
+      'actor',
+      'createdAt',
+      'goal',
+      'newValues',
+      'previousValues',
+      'type',
+      'uuid',
+    ]);
+    expect(Number.isNaN(Date.parse(body.data[0].createdAt))).toBe(false);
+    await otherHero.get(`/api/projects/${project.uuid}/history`).expect(404);
+    await admin.get(`/api/projects/${project.uuid}/history?page=0`).expect(400);
+    await admin
+      .get(`/api/projects/${project.uuid}/history?limit=51`)
+      .expect(400);
+    await admin.get('/api/projects/not-a-uuid/history').expect(400);
+    await hero
+      .post(`/api/projects/${project.uuid}/history`)
+      .send({ type: 'PROJECT_CREATED' })
+      .expect(404);
+
+    await admin
+      .patch(`/api/projects/${project.uuid}`)
+      .send({ responsibleUuid: otherHeroUuid })
+      .expect(200);
+    await hero.get(`/api/projects/${project.uuid}/history`).expect(404);
+
+    const reassigned = await otherHero
+      .get(`/api/projects/${project.uuid}/history?page=3&limit=2`)
+      .expect(200);
+
+    expect(
+      (reassigned.body as EnvelopeBody<Array<{ type: string }>>).data.at(-1)
+        ?.type,
+    ).toBe('PROJECT_CREATED');
+    await admin.delete(`/api/projects/${project.uuid}`).expect(200);
+    await admin.get(`/api/projects/${project.uuid}/history`).expect(404);
+  });
+
   it('creates a PENDING project with six goals and only public hero fields', async () => {
     const response = await admin
       .post('/api/projects')

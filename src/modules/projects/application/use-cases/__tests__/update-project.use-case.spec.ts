@@ -10,8 +10,13 @@ import { InactiveProjectError } from '../../../domain/errors/inactive-project.er
 import { IneligibleResponsibleHeroError } from '../../../domain/errors/ineligible-responsible-hero.error';
 import { ProjectNotFoundError } from '../../../domain/errors/project-not-found.error';
 import type { ProjectHeroRepository } from '../../../domain/repositories/project-hero.repository';
+import type { ProjectHistoryRepository } from '../../../domain/repositories/project-history.repository';
 import type { ProjectRepository } from '../../../domain/repositories/project.repository';
 import { UpdateProjectUseCase } from '../update-project.use-case';
+
+const historyRepository = mockOf<ProjectHistoryRepository>({
+  append: jest.fn().mockResolvedValue(undefined),
+});
 
 const transactionManager = mockOf<TransactionManagerPort>({
   runInTransaction: (work) => work(),
@@ -30,6 +35,7 @@ describe('UpdateProjectUseCase', () => {
       mockOf<ProjectRepository>({ update, findByUuidForUpdate }),
       mockOf<ProjectHeroRepository>({ findCandidateByUuid }),
       transactionManager,
+      historyRepository,
     );
 
     return { useCase, update, findCandidateByUuid };

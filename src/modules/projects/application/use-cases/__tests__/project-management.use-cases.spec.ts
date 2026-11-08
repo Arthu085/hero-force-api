@@ -4,6 +4,7 @@ import type { TransactionManagerPort } from '@shared/application/ports';
 import { ProjectGoalType } from '../../../domain/enums/project-goal-type.enum';
 import { ProjectManagementForbiddenError } from '../../../domain/errors/project-management-forbidden.error';
 import type { ProjectHeroRepository } from '../../../domain/repositories/project-hero.repository';
+import type { ProjectHistoryRepository } from '../../../domain/repositories/project-history.repository';
 import type { ProjectRepository } from '../../../domain/repositories/project.repository';
 import { CreateProjectUseCase } from '../create-project.use-case';
 import { DeleteProjectUseCase } from '../delete-project.use-case';
@@ -27,6 +28,10 @@ describe('Project management by a non-administrator', () => {
     findCandidateByUuid: jest.fn(),
   });
 
+  const historyRepository = mockOf<ProjectHistoryRepository>({
+    append: jest.fn().mockResolvedValue(undefined),
+  });
+
   const transactionManager = mockOf<TransactionManagerPort>({
     runInTransaction,
   });
@@ -35,7 +40,12 @@ describe('Project management by a non-administrator', () => {
     {
       name: 'create',
       run: () =>
-        new CreateProjectUseCase(projects, heroes, transactionManager).execute({
+        new CreateProjectUseCase(
+          projects,
+          heroes,
+          transactionManager,
+          historyRepository,
+        ).execute({
           name: 'Operation Skyfall',
           description: 'Stop the meteor shower.',
           responsibleUuid: 'hero-uuid',
@@ -45,7 +55,12 @@ describe('Project management by a non-administrator', () => {
     {
       name: 'update',
       run: () =>
-        new UpdateProjectUseCase(projects, heroes, transactionManager).execute({
+        new UpdateProjectUseCase(
+          projects,
+          heroes,
+          transactionManager,
+          historyRepository,
+        ).execute({
           uuid: 'project-uuid',
           name: 'Renamed',
           viewer,
@@ -54,7 +69,11 @@ describe('Project management by a non-administrator', () => {
     {
       name: 'update goals',
       run: () =>
-        new UpdateProjectGoalsUseCase(projects, transactionManager).execute({
+        new UpdateProjectGoalsUseCase(
+          projects,
+          transactionManager,
+          historyRepository,
+        ).execute({
           uuid: 'project-uuid',
           goals: [{ goal: ProjectGoalType.AGILITY, progress: 50 }],
           viewer,
@@ -63,7 +82,11 @@ describe('Project management by a non-administrator', () => {
     {
       name: 'delete',
       run: () =>
-        new DeleteProjectUseCase(projects, transactionManager).execute({
+        new DeleteProjectUseCase(
+          projects,
+          transactionManager,
+          historyRepository,
+        ).execute({
           uuid: 'project-uuid',
           viewer,
         }),

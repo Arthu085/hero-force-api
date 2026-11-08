@@ -36,11 +36,14 @@ describe('runSeeders (integration)', () => {
     await moduleRef.close();
   });
 
-  afterEach(async () => {
+  async function clearTables(): Promise<void> {
     await dataSource.query(
       'TRUNCATE TABLE "users", "roles", "abilities" RESTART IDENTITY CASCADE',
     );
-  });
+  }
+
+  beforeEach(clearTables);
+  afterEach(clearTables);
 
   async function countRows(): Promise<TableCounts> {
     const [row]: Array<Record<keyof TableCounts, string>> =

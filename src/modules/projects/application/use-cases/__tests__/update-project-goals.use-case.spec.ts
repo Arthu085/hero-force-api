@@ -10,8 +10,13 @@ import { ProjectGoalType } from '../../../domain/enums/project-goal-type.enum';
 import { ProjectStatus } from '../../../domain/enums/project-status.enum';
 import { InactiveProjectError } from '../../../domain/errors/inactive-project.error';
 import { ProjectNotFoundError } from '../../../domain/errors/project-not-found.error';
+import type { ProjectHistoryRepository } from '../../../domain/repositories/project-history.repository';
 import type { ProjectRepository } from '../../../domain/repositories/project.repository';
 import { UpdateProjectGoalsUseCase } from '../update-project-goals.use-case';
+
+const historyRepository = mockOf<ProjectHistoryRepository>({
+  append: jest.fn().mockResolvedValue(undefined),
+});
 
 const transactionManager = mockOf<TransactionManagerPort>({
   runInTransaction: (work) => work(),
@@ -29,6 +34,7 @@ describe('UpdateProjectGoalsUseCase', () => {
         findByUuidForUpdate: jest.fn().mockResolvedValue(project),
       }),
       transactionManager,
+      historyRepository,
     );
 
     return { useCase, update };

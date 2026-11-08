@@ -29,7 +29,7 @@ reset, and account notifications).
 | [`auth`](modules/auth.md) | Login, refresh, logout, password recovery, CSRF token issuance; binds the global CSRF, JWT, and ability guards | Yes |
 | [`users`](modules/users.md) | Public self-registration, user management, role and character assignment, admin protection and change approvals, self-service profile and password change, email confirmation | Yes |
 | [`characters`](modules/characters.md) | Fixed, code-defined catalog of superhero characters users may pick | Yes |
-| [`projects`](modules/projects.md) | Projects with a responsible hero, six fixed goals, derived progress and status, and dashboard statistics | Yes |
+| [`projects`](modules/projects.md) | Projects with a responsible hero, six fixed goals, derived progress and status, change history, and dashboard statistics | Yes |
 | [`authorization`](modules/authorization.md) | Fixed Role/Ability catalog, role grant management, and the `AbilitiesGuard` | Yes |
 | [`audit`](modules/audit.md) | Append-only trail of HTTP requests on opted-in routes | No |
 | [`email-quota`](modules/email-quota.md) | Per-recipient, per-type, per-UTC-day send cap; fails closed | No |

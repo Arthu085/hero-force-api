@@ -77,7 +77,7 @@ are never added or removed afterwards.
 
 | Route | Abilities |
 | --- | --- |
-| `GET /projects`, `GET /projects/:uuid`, `GET /projects/statistics` | `(READ, PROJECT)` |
+| `GET /projects`, `GET /projects/:uuid`, `GET /projects/statistics`, `GET /projects/:uuid/history` | `(READ, PROJECT)` |
 | `POST /projects` | `(CREATE, PROJECT)` + the `ADMIN` role |
 | `PATCH /projects/:uuid`, `PATCH /projects/:uuid/goals` | `(UPDATE, PROJECT)` + `(READ, PROJECT)` + the `ADMIN` role |
 | `DELETE /projects/:uuid` | `(DELETE, PROJECT)` + `(READ, PROJECT)` + the `ADMIN` role |
@@ -128,3 +128,34 @@ Labels come from `enums.project_status.*` and `enums.project_goal.*` in `pt-BR` 
 ## Configuration
 
 None.
+
+## Project change history
+
+`GET /projects/:uuid/history` returns paginated, read-only business events with the same visibility,
+active-record check, and not-found behavior as project details. `page` defaults to 1 and `limit` to
+20 (maximum 50). Entries are ordered by `created_at DESC, id DESC`, including deterministic ordering
+when one transaction records several changes. Timestamps use database statement time after the
+project lock, so a transaction started earlier cannot place a later change below its predecessor.
+This history is separate from technical audit logs.
+
+Each entry exposes `uuid`, `type`, `createdAt`, `actor` (`{ uuid, name }` or `null`), `goal` (a goal
+code for goal events, otherwise `null`), `previousValues`, and `newValues`. Values contain only the
+relevant `name`, `description`, `responsible` (`{ uuid, name }`), or `progress` fields. Event types
+are `PROJECT_CREATED`, `PROJECT_NAME_CHANGED`, `PROJECT_DESCRIPTION_CHANGED`,
+`RESPONSIBLE_HERO_CHANGED`, `GOAL_DESCRIPTION_CHANGED`, `GOAL_PROGRESS_CHANGED`, and
+`PROJECT_DELETED`. Creation stores the initial name, description, and hero in `newValues`;
+deletion stores those final values in `previousValues`. Field changes store both values; goal
+progress includes both integer percentages, and clearing a goal description records `null`.
+
+Events are appended inside the existing project transaction. Updates compare the locked project
+with its saved state and record one event for each actual value change. Omitted or unchanged fields
+create no events. A history write failure rolls back the project write, including its goals or
+soft deletion. Existing projects receive no invented backfill; history begins with changes made
+after this feature is deployed.
+
+`project_history` is append-only and extends `BaseTechnicalOrmEntity`. Its project FK uses
+`ON DELETE RESTRICT`; project soft deletion retains all events, while the public endpoint continues
+to hide the deleted project. The nullable actor FK uses `ON DELETE SET NULL`: inactive and
+soft-deleted actors still resolve by name, and hard-deleted actors appear as `null` without losing
+events. Responsible hero values are public name/uuid snapshots. Email, credentials, roles, internal
+IDs, and unrelated audit context are never exposed. There are no history mutation endpoints.

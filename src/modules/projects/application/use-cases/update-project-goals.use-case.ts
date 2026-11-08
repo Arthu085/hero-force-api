@@ -10,8 +10,13 @@ import type {
 } from '../../domain/entities/project.entity';
 import { InactiveProjectError } from '../../domain/errors/inactive-project.error';
 import { ProjectNotFoundError } from '../../domain/errors/project-not-found.error';
+import { projectHistoryChanges } from '../../domain/policies/project-history.policy';
 import { assertProjectAdministrator } from '../../domain/policies/project-management.policy';
 import type { ProjectViewer } from '../../domain/policies/project-visibility.policy';
+import {
+  PROJECT_HISTORY_REPOSITORY,
+  type ProjectHistoryRepository,
+} from '../../domain/repositories/project-history.repository';
 import {
   PROJECT_REPOSITORY,
   type ProjectRepository,
@@ -30,6 +35,8 @@ export class UpdateProjectGoalsUseCase {
     private readonly projectRepository: ProjectRepository,
     @Inject(TRANSACTION_MANAGER)
     private readonly transactionManager: TransactionManagerPort,
+    @Inject(PROJECT_HISTORY_REPOSITORY)
+    private readonly historyRepository: ProjectHistoryRepository,
   ) {}
 
   async execute(input: UpdateProjectGoalsInput): Promise<ProjectEntity> {
@@ -46,9 +53,17 @@ export class UpdateProjectGoalsUseCase {
 
       assertRecordActive(project, new InactiveProjectError());
 
-      return this.projectRepository.update(
+      const updated = await this.projectRepository.update(
         project.withGoalChanges(input.goals, input.viewer.id),
       );
+
+      await this.historyRepository.append(
+        project.id,
+        input.viewer.id,
+        projectHistoryChanges(project, updated),
+      );
+
+      return updated;
     });
   }
 }

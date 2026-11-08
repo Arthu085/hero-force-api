@@ -8,6 +8,7 @@ import type { ProjectEntity } from '../../domain/entities/project.entity';
 import type { ProjectHero } from '../../domain/entities/project-hero';
 import { InactiveProjectError } from '../../domain/errors/inactive-project.error';
 import { ProjectNotFoundError } from '../../domain/errors/project-not-found.error';
+import { projectHistoryChanges } from '../../domain/policies/project-history.policy';
 import { assertProjectAdministrator } from '../../domain/policies/project-management.policy';
 import type { ProjectViewer } from '../../domain/policies/project-visibility.policy';
 import { assertEligibleResponsibleHero } from '../../domain/policies/responsible-hero.policy';
@@ -15,6 +16,10 @@ import {
   PROJECT_HERO_REPOSITORY,
   type ProjectHeroRepository,
 } from '../../domain/repositories/project-hero.repository';
+import {
+  PROJECT_HISTORY_REPOSITORY,
+  type ProjectHistoryRepository,
+} from '../../domain/repositories/project-history.repository';
 import {
   PROJECT_REPOSITORY,
   type ProjectRepository,
@@ -37,6 +42,8 @@ export class UpdateProjectUseCase {
     private readonly heroRepository: ProjectHeroRepository,
     @Inject(TRANSACTION_MANAGER)
     private readonly transactionManager: TransactionManagerPort,
+    @Inject(PROJECT_HISTORY_REPOSITORY)
+    private readonly historyRepository: ProjectHistoryRepository,
   ) {}
 
   async execute(input: UpdateProjectInput): Promise<ProjectEntity> {
@@ -53,7 +60,7 @@ export class UpdateProjectUseCase {
 
       assertRecordActive(project, new InactiveProjectError());
 
-      return this.projectRepository.update(
+      const updated = await this.projectRepository.update(
         project.withDetails({
           name: input.name ?? project.name,
           description: input.description ?? project.description,
@@ -64,6 +71,14 @@ export class UpdateProjectUseCase {
           actorId: input.viewer.id,
         }),
       );
+
+      await this.historyRepository.append(
+        project.id,
+        input.viewer.id,
+        projectHistoryChanges(project, updated),
+      );
+
+      return updated;
     });
   }
 
