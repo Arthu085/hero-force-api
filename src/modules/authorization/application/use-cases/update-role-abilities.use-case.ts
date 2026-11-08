@@ -1,6 +1,8 @@
 import { Inject, Injectable } from '@nestjs/common';
 import { abilityPairKey } from '@shared/domain/authorization/ability-pair-key';
 import type { AbilityPair } from '@shared/domain/authorization/ability-pair.type';
+import { Subject } from '@shared/domain/authorization/subject';
+import { Action } from '@shared/domain/enums/action.enum';
 import { assertRecordActive } from '@shared/domain/policies';
 import { RoleEntity } from '../../domain/entities/role.entity';
 import { RoleEnum } from '../../domain/enums/role.enum';
@@ -9,6 +11,7 @@ import { InactiveAbilityError } from '../../domain/errors/inactive-ability.error
 import { InactiveRoleError } from '../../domain/errors/inactive-role.error';
 import { RoleNotFoundError } from '../../domain/errors/role-not-found.error';
 import { UnknownAbilityError } from '../../domain/errors/unknown-ability.error';
+import { UserProjectAbilitiesRestrictedError } from '../../domain/errors/user-project-abilities-restricted.error';
 import {
   ABILITY_REPOSITORY,
   type AbilityRepository,
@@ -50,6 +53,17 @@ export class UpdateRoleAbilitiesUseCase {
         input.abilities.map((pair) => [abilityPairKey(pair), pair]),
       ).values(),
     ];
+
+    if (
+      role.name === RoleEnum.USER &&
+      uniquePairs.some(
+        ({ action, subject }) =>
+          subject === Subject.PROJECT &&
+          [Action.CREATE, Action.UPDATE, Action.DELETE].includes(action),
+      )
+    ) {
+      throw new UserProjectAbilitiesRestrictedError();
+    }
 
     const resolvedAbilities =
       await this.abilityRepository.findByPairs(uniquePairs);

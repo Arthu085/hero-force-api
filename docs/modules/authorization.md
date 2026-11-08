@@ -71,13 +71,18 @@ localized validation error (`400`).
 
 `PATCH /roles/:uuid/abilities` **replaces** the grant set; it never merges.
 
-- **Check order:** not found → inactive role → `ADMIN` immutable → pair resolution → ability active →
-  persist. An inactive `ADMIN` role is therefore `InactiveRoleError`, not
+- **Check order:** not found → inactive role → `ADMIN` immutable → `USER` project restrictions →
+  pair resolution → ability active → persist. An inactive `ADMIN` role is therefore `InactiveRoleError`, not
   `AdminRoleAbilitiesImmutableError`; tests assert the order.
 - **Unresolvable or inactive abilities.** A pair whose ability is soft-deleted is
   `UnknownAbilityError` (`422`); an inactive one is `InactiveAbilityError` (`409`). Responses do not
   expose ability status, so echoing a role's grants back fails while one of them is inactive; dropping
   that pair succeeds and unlinks it.
+- **`USER` cannot receive `(CREATE, PROJECT)`, `(UPDATE, PROJECT)`, or `(DELETE, PROJECT)`.**
+  These grants cannot authorize project management, which requires `ADMIN` independently of abilities.
+  A payload containing any of them fails as `UserProjectAbilitiesRestrictedError` (`422`) before any
+  grant changes are saved. `(READ, PROJECT)` remains grantable and revocable; all other `USER`
+  permissions remain configurable. The full catalog and `ADMIN` grants are unchanged.
 - **An empty `abilities: []` is valid** and revokes every grant, so the DTO deliberately has no
   `@ArrayNotEmpty()`.
 - **Duplicate pairs are a `400`** (`@ArrayUnique`, `validation.ARRAY_UNIQUE`); the use-case also
@@ -116,6 +121,12 @@ which need no ability, and the projects assigned to it, but cannot list or read 
   grants the pair again. `GrantReadProjectToUserRole1794070369426` creates the `(READ, PROJECT)`
   ability when missing and grants it to an existing `USER` role; it is idempotent, does nothing to
   roles that do not exist yet, and reverting it revokes only that grant.
+- **`RevokeProjectManagementFromUserRole1794146671015` cleans up existing invalid `USER` grants.**
+  It deletes only the three project management links, including dormant links on inactive or
+  soft-deleted records. It preserves the catalog, `ADMIN`, every other `USER` grant, and the current
+  presence or absence of `(READ, PROJECT)`. It is idempotent and does nothing on a fresh database.
+  Its `down` is intentionally a no-op: rollback cannot recover which ineffective grants were
+  originally present and must not grant new permissions.
 - **`RoleAbilitiesSeeder` tops up `ADMIN`** with any catalog ability it lacks. Because `ADMIN`'s
   grants cannot change at runtime, this is how a new catalog ability reaches `ADMIN` in an existing
   database.

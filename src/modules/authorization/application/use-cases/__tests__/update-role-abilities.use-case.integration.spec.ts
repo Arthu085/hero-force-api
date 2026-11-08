@@ -9,6 +9,7 @@ import { RecordStatus } from '@shared/domain/enums/record-status.enum';
 import { RoleEnum } from '../../../domain/enums/role.enum';
 import { InactiveAbilityError } from '../../../domain/errors/inactive-ability.error';
 import { UnknownAbilityError } from '../../../domain/errors/unknown-ability.error';
+import { UserProjectAbilitiesRestrictedError } from '../../../domain/errors/user-project-abilities-restricted.error';
 import { ABILITY_REPOSITORY } from '../../../domain/repositories/ability.repository';
 import { ROLE_REPOSITORY } from '../../../domain/repositories/role.repository';
 import { AbilityOrmEntity } from '../../../infrastructure/persistence/entities/ability.orm-entity';
@@ -96,6 +97,66 @@ describe('UpdateRoleAbilitiesUseCase (integration)', () => {
       ].sort(),
     );
   });
+
+  it('allows READ PROJECT to be granted and revoked while preserving other USER permissions', async () => {
+    const otherPairs = [
+      { action: Action.CREATE, subject: Subject.USER },
+      { action: Action.UPDATE, subject: Subject.ROLE },
+      { action: Action.DELETE, subject: Subject.ABILITY },
+    ];
+
+    const otherAbilities = await Promise.all(
+      otherPairs.map(({ action, subject }) => insertAbility(action, subject)),
+    );
+
+    await insertAbility(Action.READ, Subject.PROJECT);
+    const role = await insertUserRole(otherAbilities);
+
+    await useCase.execute({
+      roleUuid: role.uuid,
+      abilities: [
+        ...otherPairs,
+        { action: Action.READ, subject: Subject.PROJECT },
+      ],
+    });
+    expect(await grantedPairs(role.id)).toEqual([
+      'CREATE:USER',
+      'DELETE:ABILITY',
+      'READ:PROJECT',
+      'UPDATE:ROLE',
+    ]);
+
+    await useCase.execute({ roleUuid: role.uuid, abilities: otherPairs });
+    expect(await grantedPairs(role.id)).toEqual([
+      'CREATE:USER',
+      'DELETE:ABILITY',
+      'UPDATE:ROLE',
+    ]);
+  });
+
+  it.each([Action.CREATE, Action.UPDATE, Action.DELETE])(
+    'rejects %s PROJECT and keeps all stored USER grants',
+    async (action) => {
+      const readProject = await insertAbility(Action.READ, Subject.PROJECT);
+      const updateUser = await insertAbility(Action.UPDATE, Subject.USER);
+      await insertAbility(action, Subject.PROJECT);
+      const role = await insertUserRole([readProject, updateUser]);
+
+      await expect(
+        useCase.execute({
+          roleUuid: role.uuid,
+          abilities: [
+            { action: Action.READ, subject: Subject.PROJECT },
+            { action, subject: Subject.PROJECT },
+          ],
+        }),
+      ).rejects.toBeInstanceOf(UserProjectAbilitiesRestrictedError);
+      expect(await grantedPairs(role.id)).toEqual([
+        'READ:PROJECT',
+        'UPDATE:USER',
+      ]);
+    },
+  );
 
   it('rejects an INACTIVE ability with InactiveAbilityError and keeps the stored grants', async () => {
     const readUser = await insertAbility(Action.READ, Subject.USER);

@@ -77,6 +77,10 @@ export class RolesController {
       HttpStatus.UNPROCESSABLE_ENTITY,
       'An ability pair is not in the catalog.',
     )
+    .errorResponse(
+      HttpStatus.UNPROCESSABLE_ENTITY,
+      'CREATE, UPDATE, and DELETE on PROJECT cannot be granted to USER because project management requires ADMIN.',
+    )
     .body(UpdateRoleAbilitiesDto)
     .response(RoleDetailResponseDto)
     .build())

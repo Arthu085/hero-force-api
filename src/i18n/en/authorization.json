@@ -5,7 +5,8 @@
     "missing_ability": "You do not have permission to perform this action",
     "role_inactive": "Role is inactive",
     "ability_inactive": "One or more provided abilities are inactive",
-    "admin_role_abilities_immutable": "The Administrator role's abilities cannot be changed"
+    "admin_role_abilities_immutable": "The Administrator role's abilities cannot be changed",
+    "user_project_abilities_restricted": "Create, update, and delete permissions for projects cannot be granted to the User role because project management requires the Administrator role"
   },
   "role_label": {
     "admin": "Administrator",
