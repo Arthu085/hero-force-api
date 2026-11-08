@@ -7,8 +7,13 @@ import { ProjectStatus } from '../../../domain/enums/project-status.enum';
 import { IneligibleResponsibleHeroError } from '../../../domain/errors/ineligible-responsible-hero.error';
 import { ResponsibleHeroNotFoundError } from '../../../domain/errors/responsible-hero-not-found.error';
 import type { ProjectHeroRepository } from '../../../domain/repositories/project-hero.repository';
+import type { ProjectHistoryRepository } from '../../../domain/repositories/project-history.repository';
 import type { ProjectRepository } from '../../../domain/repositories/project.repository';
 import { CreateProjectUseCase } from '../create-project.use-case';
+
+const historyRepository = mockOf<ProjectHistoryRepository>({
+  append: jest.fn().mockResolvedValue(undefined),
+});
 
 const transactionManager = mockOf<TransactionManagerPort>({
   runInTransaction: (work) => work(),
@@ -35,6 +40,7 @@ describe('CreateProjectUseCase', () => {
       mockOf<ProjectRepository>({ create }),
       mockOf<ProjectHeroRepository>({ findCandidateByUuid }),
       transactionManager,
+      historyRepository,
     );
 
     return { useCase, create, findCandidateByUuid };

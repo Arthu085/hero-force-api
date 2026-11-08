@@ -6,8 +6,13 @@ import { mockOf } from '@test/support/mocks/mock-of';
 import type { TransactionManagerPort } from '@shared/application/ports';
 import type { ProjectEntity } from '../../../domain/entities/project.entity';
 import { ProjectNotFoundError } from '../../../domain/errors/project-not-found.error';
+import type { ProjectHistoryRepository } from '../../../domain/repositories/project-history.repository';
 import type { ProjectRepository } from '../../../domain/repositories/project.repository';
 import { DeleteProjectUseCase } from '../delete-project.use-case';
+
+const historyRepository = mockOf<ProjectHistoryRepository>({
+  append: jest.fn().mockResolvedValue(undefined),
+});
 
 const transactionManager = mockOf<TransactionManagerPort>({
   runInTransaction: (work) => work(),
@@ -23,6 +28,7 @@ describe('DeleteProjectUseCase', () => {
         findByUuidForUpdate: jest.fn().mockResolvedValue(project),
       }),
       transactionManager,
+      historyRepository,
     );
 
     return { useCase, softDelete };
