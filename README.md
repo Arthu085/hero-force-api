@@ -50,8 +50,7 @@ npm run start:dev
 ### Access the API
 
 The API listens on `http://localhost:3000/api` by default. Swagger UI is available at
-`http://localhost:3000/api/docs` outside production. Sign in from the client using the confirmed
-administrator provisioned by `SEED_ADMIN_EMAIL` and `SEED_ADMIN_PASSWORD` in `.env`.
+`http://localhost:3000/api/docs` outside production.
 
 Start the [client](https://github.com/Arthu085/hero-force-client#quick-start) separately. Its
 `VITE_API_URL` should be `http://localhost:3000`, without `/api`; the API's `CORS_ORIGINS` must
@@ -60,6 +59,22 @@ include the client's actual origin, normally `http://localhost:5173`.
 For direct API requests, first obtain a CSRF token from `GET /api/auth/csrf`, preserve cookies,
 and send `X-CSRF-Token` on state-changing requests. See the
 [authentication integration guide](docs/modules/auth.md#frontend-integration).
+
+### First sign-in
+
+The seed creates an administrator with an already confirmed email. If you copied
+[`.env.example`](.env.example) without changing the seed settings, sign in from the client with
+these **local development only** credentials:
+
+- **Email:** `admin@email.com`
+- **Password:** `Admin@123`
+
+To use custom credentials, set `SEED_ADMIN_EMAIL` and `SEED_ADMIN_PASSWORD` in `.env` before
+running the seed. Rerunning the seed does not reset an existing user's password.
+
+Never use these example credentials in production or publish actual production credentials.
+Production administrator creation requires explicit opt-in through `SEED_ADMIN_ENABLED=true`;
+see the [deployment guide](docs/deployment.md).
 
 ## Features
 
