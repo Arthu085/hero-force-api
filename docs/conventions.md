@@ -201,7 +201,8 @@ including a `docs/modules/<name>.md` and a row in [`PROJECT.md`](PROJECT.md#modu
 
 ## Testing
 
-Required gate before shipping; CI runs the same commands:
+Select local validation according to [`AGENTS.md`](../AGENTS.md#gate). The full gate is below;
+CI continues to run its configured checks:
 
 ```sh
 npm run lint:check && npm run typecheck && npm run test:cov && npm run test:integration && npm run test:e2e && npm run build
