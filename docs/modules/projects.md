@@ -77,7 +77,7 @@ are never added or removed afterwards.
 
 | Route | Abilities |
 | --- | --- |
-| `GET /projects`, `GET /projects/:uuid`, `GET /projects/statistics`, `GET /projects/:uuid/history` | `(READ, PROJECT)` |
+| `GET /projects`, `GET /projects/:uuid`, `GET /projects/statistics`, `GET /projects/:uuid/history`, `GET /projects/:uuid/history/goal-progress` | `(READ, PROJECT)` |
 | `POST /projects` | `(CREATE, PROJECT)` + the `ADMIN` role |
 | `PATCH /projects/:uuid`, `PATCH /projects/:uuid/goals` | `(UPDATE, PROJECT)` + `(READ, PROJECT)` + the `ADMIN` role |
 | `DELETE /projects/:uuid` | `(DELETE, PROJECT)` + `(READ, PROJECT)` + the `ADMIN` role |
@@ -159,3 +159,30 @@ to hide the deleted project. The nullable actor FK uses `ON DELETE SET NULL`: in
 soft-deleted actors still resolve by name, and hard-deleted actors appear as `null` without losing
 events. Responsible hero values are public name/uuid snapshots. Email, credentials, roles, internal
 IDs, and unrelated audit context are never exposed. There are no history mutation endpoints.
+
+### Goal progress evolution
+
+`GET /projects/:uuid/history/goal-progress` rebuilds each goal's progress over time from the stored
+`GOAL_PROGRESS_CHANGED` events, for charting. It applies the same visibility, active-record check,
+and not-found behavior as project details (it reuses `GetProjectUseCase`), and adds no tracking of
+its own.
+
+- **Period.** `period` is `7d`, `30d` (default), `90d`, or `all`. The window starts at `from`, which
+  is now minus the period but never earlier than the project's creation; `all` starts at creation.
+  The window ends at `to`, which is the response time, or the latest change if that is later.
+- **Series.** `goals` always lists the six goals in catalog order. Each has `goal`, `goalLabel`,
+  `startProgress`, `currentProgress` (the stored value), and `changes`. `changes` holds every progress
+  event since `from` as `{ at, previousProgress, progress }`, ordered by `created_at, id`, so several
+  changes with the same timestamp keep their write order. Goals that did not change have no
+  entries.
+- **Known history.** Tracking starts at project creation when the project's earliest event is
+  `PROJECT_CREATED`, and otherwise at its earliest event: projects created before history tracking
+  have no recorded past. `recordedFrom` is the later of `from` and that tracking start, or `null`
+  when the project has no events. Progress before `recordedFrom` is unknown and is never invented.
+- **Baseline.** `startProgress` is the value at `recordedFrom`. It is the latest change before
+  `from`, otherwise the `previousProgress` of the first change in the window, otherwise the current
+  value. This holds because every change after tracking starts is recorded. `startProgress` is
+  `null` only when `recordedFrom` is.
+- **Reads.** `TypeOrmProjectHistoryRepository.findGoalProgressTimeline` runs three bounded queries on
+  the `(project_id, created_at, id)` index: the earliest event, one `DISTINCT ON (goal)` row per goal
+  before `from`, and the progress values of the window's events. It never loads the whole history.

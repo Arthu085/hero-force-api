@@ -1,4 +1,5 @@
 import { INestApplication } from '@nestjs/common';
+import request from 'supertest';
 import { App } from 'supertest/types';
 import { USER_ABILITY_REPOSITORY } from '@modules/authorization/domain/repositories/user-ability.repository';
 import type { AbilityPair } from '@shared/domain/authorization/ability-pair.type';
@@ -32,6 +33,20 @@ interface ProjectShape {
     goalLabel: string;
     description: string | null;
     progress: number;
+  }>;
+}
+
+interface GoalProgressShape {
+  period: string;
+  from: string;
+  to: string;
+  recordedFrom: string | null;
+  goals: Array<{
+    goal: string;
+    goalLabel: string;
+    startProgress: number | null;
+    currentProgress: number;
+    changes: Array<{ at: string; previousProgress: number; progress: number }>;
   }>;
 }
 
@@ -162,6 +177,94 @@ describe('Projects (e2e)', () => {
     ).toBe('PROJECT_CREATED');
     await admin.delete(`/api/projects/${project.uuid}`).expect(200);
     await admin.get(`/api/projects/${project.uuid}/history`).expect(404);
+  });
+
+  it('serves goal progress evolution with project visibility, period validation, and recorded changes only', async () => {
+    const project = await createProject('Evolution', heroUuid);
+    const path = `/api/projects/${project.uuid}/history/goal-progress`;
+
+    const empty = await hero.get(path).expect(200);
+    const emptyBody = (empty.body as EnvelopeBody<GoalProgressShape>).data;
+
+    expect(emptyBody.period).toBe('30d');
+    expect(emptyBody.recordedFrom).toBe(emptyBody.from);
+    expect(emptyBody.goals.map(({ goal }) => goal)).toEqual([
+      'AGILITY',
+      'DELIGHT',
+      'EFFICIENCY',
+      'EXCELLENCE',
+      'TRANSPARENCY',
+      'AMBITION',
+    ]);
+    expect(
+      emptyBody.goals.every(
+        ({ startProgress, currentProgress, changes }) =>
+          startProgress === 0 && currentProgress === 0 && changes.length === 0,
+      ),
+    ).toBe(true);
+
+    await admin
+      .patch(`/api/projects/${project.uuid}/goals`)
+      .send({
+        goals: [
+          { goal: 'AGILITY', progress: 20 },
+          { goal: 'DELIGHT', progress: 50 },
+        ],
+      })
+      .expect(200);
+    await admin
+      .patch(`/api/projects/${project.uuid}/goals`)
+      .send({
+        goals: [
+          { goal: 'AGILITY', progress: 70, description: 'Faster' },
+          { goal: 'DELIGHT', progress: 50 },
+        ],
+      })
+      .expect(200);
+
+    const response = await admin.get(`${path}?period=all`).expect(200);
+    const body = (response.body as EnvelopeBody<GoalProgressShape>).data;
+
+    expect(body.period).toBe('all');
+    expect(Object.keys(body).sort()).toEqual([
+      'from',
+      'goals',
+      'period',
+      'recordedFrom',
+      'to',
+    ]);
+    expect(body.goals[0]).toMatchObject({
+      goal: 'AGILITY',
+      goalLabel: expect.any(String) as string,
+      startProgress: 0,
+      currentProgress: 70,
+      changes: [
+        { previousProgress: 0, progress: 20 },
+        { previousProgress: 20, progress: 70 },
+      ],
+    });
+    expect(body.goals[1]).toMatchObject({
+      goal: 'DELIGHT',
+      currentProgress: 50,
+      changes: [{ previousProgress: 0, progress: 50 }],
+    });
+    expect(body.goals[2].changes).toEqual([]);
+    expect(Date.parse(body.to)).toBeGreaterThanOrEqual(
+      Date.parse(body.goals[0].changes[1].at),
+    );
+
+    for (const period of ['7d', '30d', '90d']) {
+      await hero.get(`${path}?period=${period}`).expect(200);
+    }
+    await admin.get(`${path}?period=365d`).expect(400);
+    await admin
+      .get('/api/projects/not-a-uuid/history/goal-progress')
+      .expect(400);
+    await otherHero.get(path).expect(404);
+    await request(app.getHttpServer()).get(path).expect(401);
+
+    await admin.delete(`/api/projects/${project.uuid}`).expect(200);
+    await admin.get(path).expect(404);
   });
 
   it('creates a PENDING project with six goals and only public hero fields', async () => {

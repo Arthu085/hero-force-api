@@ -3,6 +3,7 @@ import { TypeOrmModule } from '@nestjs/typeorm';
 import { UserOrmEntity } from '@modules/users/persistence';
 import { CreateProjectUseCase } from './application/use-cases/create-project.use-case';
 import { DeleteProjectUseCase } from './application/use-cases/delete-project.use-case';
+import { GetProjectGoalProgressUseCase } from './application/use-cases/get-project-goal-progress.use-case';
 import { GetProjectStatisticsUseCase } from './application/use-cases/get-project-statistics.use-case';
 import { GetProjectUseCase } from './application/use-cases/get-project.use-case';
 import { ListProjectHeroesUseCase } from './application/use-cases/list-project-heroes.use-case';
@@ -50,6 +51,7 @@ import { ProjectsController } from './presentation/controllers/projects.controll
       useClass: TypeOrmProjectHistoryRepository,
     },
     ListProjectHistoryUseCase,
+    GetProjectGoalProgressUseCase,
     ListProjectsUseCase,
     GetProjectUseCase,
     GetProjectStatisticsUseCase,

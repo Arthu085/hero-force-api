@@ -349,6 +349,165 @@ describe('Project history (integration)', () => {
     expect(await dataSource.getRepository(ProjectOrmEntity).count()).toBe(0);
   });
 
+  describe('goal progress timeline', () => {
+    const at = (value: string) => new Date(value);
+
+    const insertEvents = (
+      projectId: number,
+      events: {
+        type: ProjectHistoryType;
+        goal?: ProjectGoalType;
+        createdAt: Date;
+        from?: number;
+        to?: number;
+      }[],
+    ) =>
+      dataSource.getRepository(ProjectHistoryOrmEntity).insert(
+        events.map(({ type, goal = null, createdAt, from, to }) => ({
+          projectId,
+          actorId: actor.id,
+          type,
+          goal,
+          createdAt,
+          previousValues: from === undefined ? null : { progress: from },
+          newValues: to === undefined ? null : { progress: to },
+        })),
+      );
+
+    it('reads the first event, the last progress before the window, and ordered window changes of one project only', async () => {
+      const project = await makeProject();
+      const neighbour = await makeProject();
+
+      await insertEvents(project.id, [
+        {
+          type: ProjectHistoryType.RESPONSIBLE_HERO_CHANGED,
+          createdAt: at('2026-01-01T00:00:00Z'),
+        },
+        {
+          type: ProjectHistoryType.GOAL_PROGRESS_CHANGED,
+          goal: ProjectGoalType.AGILITY,
+          createdAt: at('2026-01-05T00:00:00Z'),
+          from: 0,
+          to: 10,
+        },
+        {
+          type: ProjectHistoryType.GOAL_PROGRESS_CHANGED,
+          goal: ProjectGoalType.AGILITY,
+          createdAt: at('2026-01-06T00:00:00Z'),
+          from: 10,
+          to: 20,
+        },
+        {
+          type: ProjectHistoryType.GOAL_DESCRIPTION_CHANGED,
+          goal: ProjectGoalType.AGILITY,
+          createdAt: at('2026-01-07T00:00:00Z'),
+        },
+        {
+          type: ProjectHistoryType.GOAL_PROGRESS_CHANGED,
+          goal: ProjectGoalType.DELIGHT,
+          createdAt: at('2026-02-01T00:00:00Z'),
+          from: 0,
+          to: 30,
+        },
+        {
+          type: ProjectHistoryType.GOAL_PROGRESS_CHANGED,
+          goal: ProjectGoalType.AGILITY,
+          createdAt: at('2026-02-01T00:00:00Z'),
+          from: 20,
+          to: 40,
+        },
+        {
+          type: ProjectHistoryType.GOAL_PROGRESS_CHANGED,
+          goal: ProjectGoalType.AGILITY,
+          createdAt: at('2026-02-03T00:00:00Z'),
+          from: 40,
+          to: 35,
+        },
+      ]);
+      await insertEvents(neighbour.id, [
+        {
+          type: ProjectHistoryType.GOAL_PROGRESS_CHANGED,
+          goal: ProjectGoalType.AMBITION,
+          createdAt: at('2025-12-01T00:00:00Z'),
+          from: 0,
+          to: 90,
+        },
+        {
+          type: ProjectHistoryType.GOAL_PROGRESS_CHANGED,
+          goal: ProjectGoalType.AMBITION,
+          createdAt: at('2026-02-02T00:00:00Z'),
+          from: 90,
+          to: 95,
+        },
+      ]);
+
+      const timeline = await history.findGoalProgressTimeline(
+        project.id,
+        at('2026-02-01T00:00:00Z'),
+      );
+
+      expect(timeline).toEqual({
+        firstEvent: {
+          type: ProjectHistoryType.RESPONSIBLE_HERO_CHANGED,
+          at: at('2026-01-01T00:00:00Z'),
+        },
+        progressBefore: [{ goal: ProjectGoalType.AGILITY, progress: 20 }],
+        changes: [
+          {
+            goal: ProjectGoalType.DELIGHT,
+            at: at('2026-02-01T00:00:00Z'),
+            previousProgress: 0,
+            progress: 30,
+          },
+          {
+            goal: ProjectGoalType.AGILITY,
+            at: at('2026-02-01T00:00:00Z'),
+            previousProgress: 20,
+            progress: 40,
+          },
+          {
+            goal: ProjectGoalType.AGILITY,
+            at: at('2026-02-03T00:00:00Z'),
+            previousProgress: 40,
+            progress: 35,
+          },
+        ],
+      });
+    });
+
+    it('reports the creation event of a tracked project and nothing for a project without history', async () => {
+      const project = await makeProject();
+      await goals.execute({
+        uuid: project.uuid,
+        goals: [{ goal: ProjectGoalType.AGILITY, progress: 25 }],
+        viewer: viewer(),
+      });
+
+      const tracked = await history.findGoalProgressTimeline(
+        project.id,
+        project.createdAt,
+      );
+
+      expect(tracked.firstEvent?.type).toBe(ProjectHistoryType.PROJECT_CREATED);
+      expect(tracked.progressBefore).toEqual([]);
+      expect(tracked.changes).toEqual([
+        expect.objectContaining({
+          goal: ProjectGoalType.AGILITY,
+          previousProgress: 0,
+          progress: 25,
+        }),
+      ]);
+
+      await dataSource
+        .getRepository(ProjectHistoryOrmEntity)
+        .delete({ projectId: project.id });
+
+      expect(
+        await history.findGoalProgressTimeline(project.id, project.createdAt),
+      ).toEqual({ firstEvent: null, progressBefore: [], changes: [] });
+    });
+  });
+
   it.each(['create', 'update', 'goals', 'delete'])(
     'rolls back the %s mutation when history insertion fails',
     async (operation) => {

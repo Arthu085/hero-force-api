@@ -1,3 +1,4 @@
+import type { ProjectGoalProgressTimeline } from '../entities/project-goal-progress';
 import type {
   ProjectHistory,
   ProjectHistoryChange,
@@ -16,4 +17,8 @@ export interface ProjectHistoryRepository {
     offset: number,
     limit: number,
   ): Promise<{ items: ProjectHistory[]; total: number }>;
+  findGoalProgressTimeline(
+    projectId: number,
+    from: Date,
+  ): Promise<ProjectGoalProgressTimeline>;
 }
