@@ -62,7 +62,9 @@ are never added or removed afterwards.
 - **Editing.** `PATCH /projects/:uuid/goals` takes a non-empty array of `{ goal, description?,
   progress? }`, each goal at most once (`validation.ARRAY_UNIQUE`). Goals left out keep their values;
   an omitted `description` or `progress` keeps the current one, and `description: null` clears it.
-  `progress` is an integer from 0 to 100; `description` is at most 500 characters.
+  `progress` is an integer from 0 to 100; a non-null `description` is at most 500 characters and
+  must contain a non-whitespace character (`NON_BLANK_PATTERN`), so `""` and whitespace-only text are
+  a `400`; it is stored as sent.
 - **Derived values.** Goals have equal weight. Overall `progress` is their average rounded down;
   `status` is `PENDING` when every goal is at 0, `COMPLETED` when every goal is at 100, and
   `IN_PROGRESS` otherwise (`domain/policies/project-progress.policy.ts`). Both are computed by the
