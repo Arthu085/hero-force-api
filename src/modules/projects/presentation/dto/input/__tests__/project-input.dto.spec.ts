@@ -77,6 +77,14 @@ describe('UpdateProjectGoalsDto', () => {
   });
 
   it.each([
+    ['omitted', { goal: 'AGILITY' }],
+    ['null', { goal: 'AGILITY', description: null }],
+    ['valid', { goal: 'AGILITY', description: '  Move fast  ' }],
+  ])('accepts a %s goal description', async (_, change) => {
+    expect(await validateGoals([change])).toEqual([]);
+  });
+
+  it.each([
     [[]],
     [[{ goal: 'AGILITY' }, { goal: 'AGILITY' }]],
     [[{ goal: 'SPEED' }]],
@@ -84,6 +92,9 @@ describe('UpdateProjectGoalsDto', () => {
     [[{ goal: 'AGILITY', progress: -1 }]],
     [[{ goal: 'AGILITY', progress: 10.5 }]],
     [[{ goal: 'AGILITY', description: 'x'.repeat(501) }]],
+    [[{ goal: 'AGILITY', description: '' }]],
+    [[{ goal: 'AGILITY', description: '   ' }]],
+    [[{ goal: 'AGILITY', description: '\t\n' }]],
     [[null]],
   ])('rejects %j', async (goals) => {
     expect(errorFields(await validateGoals(goals))).toEqual(['goals']);

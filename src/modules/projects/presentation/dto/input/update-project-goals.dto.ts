@@ -7,6 +7,7 @@ import {
   IsEnum,
   IsInt,
   IsString,
+  Matches,
   Max,
   MaxLength,
   Min,
@@ -14,6 +15,7 @@ import {
   ValidateNested,
 } from 'class-validator';
 import { i18nValidationMessage } from 'nestjs-i18n';
+import { NON_BLANK_PATTERN } from '@shared/domain/constraints';
 import {
   PROJECT_GOAL_DESCRIPTION_MAX_LENGTH,
   PROJECT_GOAL_PROGRESS_MAX,
@@ -32,12 +34,16 @@ export class ProjectGoalChangeDto {
     type: String,
     nullable: true,
     maxLength: PROJECT_GOAL_DESCRIPTION_MAX_LENGTH,
+    pattern: NON_BLANK_PATTERN.source,
     description: 'Omitted keeps the current description; null clears it.',
   })
   @ValidateIf(
     (_: object, value: unknown) => value !== undefined && value !== null,
   )
   @IsString({ message: i18nValidationMessage('validation.IS_STRING') })
+  @Matches(NON_BLANK_PATTERN, {
+    message: i18nValidationMessage('validation.NOT_EMPTY'),
+  })
   @MaxLength(PROJECT_GOAL_DESCRIPTION_MAX_LENGTH, {
     message: i18nValidationMessage('validation.MAX_LENGTH'),
   })
