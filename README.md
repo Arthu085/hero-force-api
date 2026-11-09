@@ -89,10 +89,9 @@ The seed creates an administrator with a confirmed email. With the unchanged
 To use other credentials, set `SEED_ADMIN_EMAIL` and `SEED_ADMIN_PASSWORD` in `.env` before running
 the seed. Rerunning the seed does not reset an existing user's password.
 
-> [!WARNING]
-> Never use these example credentials in production or publish real production credentials.
-> Production administrator creation requires explicit opt-in with `SEED_ADMIN_ENABLED=true`; see the
-> [deployment guide](docs/deployment.md#first-release-and-administrator).
+Never use these example credentials in production or publish real production credentials.
+Production administrator creation requires explicit opt-in with `SEED_ADMIN_ENABLED=true`; see the
+[deployment guide](docs/deployment.md#first-release-and-administrator).
 
 By default, `MAIL_TRANSPORT=log` sends no email and writes confirmation and password-reset tokens to
 the application logs. To capture real emails with Mailpit, see
