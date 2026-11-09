@@ -1,6 +1,7 @@
 import type { INestApplication } from '@nestjs/common';
 import { I18nValidationExceptionFilter } from 'nestjs-i18n';
 import { AppValidationPipe } from '../app-validation.pipe';
+import { buildValidationErrorBody } from '../build-validation-error-body';
 import { setupValidation } from '../setup-validation';
 
 describe('setupValidation', () => {
@@ -32,6 +33,23 @@ describe('setupValidation', () => {
     expect(app.useGlobalFilters).toHaveBeenCalledWith(
       expect.any(I18nValidationExceptionFilter),
     );
+  });
+
+  it('flattens validation errors into the documented error body', () => {
+    const app = createApp();
+
+    setupValidation(app as unknown as INestApplication);
+
+    const [filter] = app.useGlobalFilters.mock.calls[0] as [
+      I18nValidationExceptionFilter,
+    ];
+
+    expect(
+      (filter as unknown as { options: Record<string, unknown> }).options,
+    ).toEqual({
+      detailedErrors: false,
+      responseBodyFormatter: buildValidationErrorBody,
+    });
   });
 
   it('strips unknown properties instead of rejecting them', () => {
