@@ -104,9 +104,10 @@ regular user's own scope.
 (`PENDING`, `IN_PROGRESS`, `COMPLETED`), `responsible` (hero uuid), `sortBy` (`name`, `status`,
 `progress`, `responsible`, `createdAt`, `updatedAt`), and `sortOrder`. Without `sortBy`, the newest
 project comes first; explicit sorting defaults to ascending and breaks ties by internal id descending.
-`status` sorts the stored code and `responsible` the hero's real name. List items carry `uuid`, `name`,
-`status`, `statusLabel`, `progress`, `responsible`, `createdAt`, and `updatedAt`; the detail adds
-`description` and the six `goals` with `goalLabel`.
+`status` sorts by the Postgres enum declaration order, not alphabetically: ascending is `PENDING`,
+`IN_PROGRESS`, `COMPLETED`. `responsible` sorts by the hero's real name. List items carry `uuid`,
+`name`, `status`, `statusLabel`, `progress`, `responsible`, `createdAt`, and `updatedAt`; the detail
+adds `description` and the six `goals` with `goalLabel`.
 
 `GET /projects/statistics` returns `total`, `pending`, `inProgress`, `completed`, and
 `averageProgress` (the average overall progress rounded down, `0` without projects) over the
